@@ -67,13 +67,17 @@ export default function SellerDashboard() {
             await Promise.all(
                 ordersData.map(async (order) => {
                     try {
-                        const orderBids = await getBidsByOrder(order.id);
+                        // Pass false to not mask seller info for bid comparison
+                        const orderBids = await getBidsByOrder(order.id, false);
+                        console.log(`Order ${order.id.slice(0, 8)} has ${orderBids.length} bids:`, orderBids.map(b => ({ id: b.id.slice(0, 6), sellerId: b.sellerId?.slice(0, 6), amount: b.bidAmount })));
                         orderBidsMap[order.id] = orderBids;
                     } catch (err) {
+                        console.error(`Error fetching bids for order ${order.id}:`, err);
                         orderBidsMap[order.id] = [];
                     }
                 })
             );
+            console.log('All order bids map:', Object.keys(orderBidsMap).map(k => ({ orderId: k.slice(0, 8), bidCount: orderBidsMap[k].length })));
             setAllOrderBids(orderBidsMap);
         } catch (error) {
             console.error('Error fetching data:', error);

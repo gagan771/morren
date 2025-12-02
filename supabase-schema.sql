@@ -267,6 +267,13 @@ CREATE POLICY "Buyers can view bids on their orders" ON bids FOR SELECT USING (
   EXISTS (SELECT 1 FROM orders WHERE orders.id = bids.order_id AND orders.buyer_id = auth.uid())
 );
 CREATE POLICY "Sellers can view own bids" ON bids FOR SELECT USING (auth.uid() = seller_id);
+CREATE POLICY "Sellers can view all bids on orders they bid on" ON bids FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM bids AS my_bids 
+    WHERE my_bids.order_id = bids.order_id 
+    AND my_bids.seller_id = auth.uid()
+  )
+);
 CREATE POLICY "Admins can view all bids" ON bids FOR SELECT USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
 );

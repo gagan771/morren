@@ -426,11 +426,13 @@ export async function getBidsByOrder(orderId: string, maskSellerInfo: boolean = 
 
     if (error) throw error;
     
-    // Transform and optionally mask seller info for buyer privacy
+    console.log('getBidsByOrder raw data:', data); // Debug log
+    
+    // Transform bids - keep sellerId for comparison but mask seller name/details
     return (data || []).map(bid => {
         const transformed = transformBid({ ...bid, seller: null });
+        // sellerId is kept for bid comparison, but seller details (name, email) are not exposed
         if (maskSellerInfo) {
-            // Mask seller info - buyer should not see seller details
             transformed.seller = undefined;
         }
         return transformed;
