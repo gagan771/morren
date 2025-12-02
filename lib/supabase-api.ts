@@ -270,7 +270,12 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
         .eq('status', 'pending') // Only show pending orders available for bidding
         .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+        console.error('Error fetching orders for seller:', error);
+        throw error;
+    }
+    
+    console.log('Raw orders data:', data?.length || 0, 'orders');
     
     // Transform and mask buyer info for seller privacy
     return (data || []).map(order => {

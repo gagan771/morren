@@ -51,40 +51,48 @@ export default function SellerDashboard() {
 
     const fetchData = async (silent = false) => {
         if (!user) return;
+        
+        if (!silent) {
+            setLoading(true);
+        }
+        
         try {
-            if (!silent) {
-                setLoading(true);
-            }
+            console.log('Fetching orders for seller:', user.id);
             const [ordersData, bidsData] = await Promise.all([
                 getOrdersBySeller(user.id),
                 getBidsBySeller(user.id),
             ]);
-            setOrders(ordersData);
-            setBids(bidsData);
+            
+            console.log('Orders fetched:', ordersData?.length || 0);
+            console.log('Bids fetched:', bidsData?.length || 0);
+            
+            setOrders(ordersData || []);
+            setBids(bidsData || []);
 
             // Fetch all bids for each order to compare
             const orderBidsMap: Record<string, Bid[]> = {};
-            await Promise.all(
-                ordersData.map(async (order) => {
-                    try {
-                        // Pass false to not mask seller info for bid comparison
-                        const orderBids = await getBidsByOrder(order.id, false);
-                        console.log(`Order ${order.id.slice(0, 8)} has ${orderBids.length} bids:`, orderBids.map(b => ({ id: b.id.slice(0, 6), sellerId: b.sellerId?.slice(0, 6), amount: b.bidAmount })));
-                        orderBidsMap[order.id] = orderBids;
-                    } catch (err) {
-                        console.error(`Error fetching bids for order ${order.id}:`, err);
-                        orderBidsMap[order.id] = [];
-                    }
-                })
-            );
-            console.log('All order bids map:', Object.keys(orderBidsMap).map(k => ({ orderId: k.slice(0, 8), bidCount: orderBidsMap[k].length })));
+            if (ordersData && ordersData.length > 0) {
+                await Promise.all(
+                    ordersData.map(async (order) => {
+                        try {
+                            // Pass false to not mask seller info for bid comparison
+                            const orderBids = await getBidsByOrder(order.id, false);
+                            console.log(`Order ${order.id.slice(0, 8)} has ${orderBids.length} bids`);
+                            orderBidsMap[order.id] = orderBids || [];
+                        } catch (err) {
+                            console.error(`Error fetching bids for order ${order.id}:`, err);
+                            orderBidsMap[order.id] = [];
+                        }
+                    })
+                );
+            }
             setAllOrderBids(orderBidsMap);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching data:', error);
             if (!silent) {
                 toast({
                     title: "Error",
-                    description: "Failed to load orders. Please refresh the page.",
+                    description: error?.message || "Failed to load orders. Please refresh the page.",
                     variant: "destructive",
                 });
             }
@@ -851,7 +859,7 @@ export default function SellerDashboard() {
                                                     </div>
                                                     <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
                                                         <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Order Budget</Label>
-                                                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">${order.totalPrice.toFixed(2)}</p>
+                                                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">${(order.totalPrice || 0).toFixed(2)}</p>
                                                     </div>
                                                     <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                                                         <Label className="text-xs text-muted-foreground uppercase tracking-wider">Size</Label>
@@ -987,7 +995,7 @@ export default function SellerDashboard() {
                                         />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Order budget: <span className="font-semibold">${selectedOrder?.totalPrice.toFixed(2)}</span>
+                                        Order budget: <span className="font-semibold">${(selectedOrder?.totalPrice || 0).toFixed(2)}</span>
                                     </p>
                                 </div>
                                 <div className="space-y-2">
