@@ -313,8 +313,8 @@ export default function AdminDashboard() {
     return (
         <DashboardLayout role="admin">
             <div className="relative min-h-[calc(100vh-4rem)]">
-                {/* Background Effect */}
-                <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
+                {/* Background Effect - only visible in dark mode */}
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-50 hidden dark:block">
                     <BackgroundBeams />
                 </div>
 
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
 
                     {/* Stats Cards */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Items</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -361,7 +361,7 @@ export default function AdminDashboard() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -403,7 +403,7 @@ export default function AdminDashboard() {
 
                     {/* Main Content */}
                     <Tabs defaultValue="items" className="space-y-6">
-                        <TabsList className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm p-1 border border-gray-200 dark:border-gray-800 rounded-xl">
+                        <TabsList className="bg-white dark:bg-gray-900 p-1 border border-gray-200 dark:border-gray-800 rounded-xl">
                             <TabsTrigger value="items" className="rounded-lg data-[state=active]:bg-rose-100 data-[state=active]:text-rose-700">Items</TabsTrigger>
                             <TabsTrigger value="orders" className="rounded-lg data-[state=active]:bg-rose-100 data-[state=active]:text-rose-700">Orders</TabsTrigger>
                             <TabsTrigger value="bids" className="rounded-lg data-[state=active]:bg-rose-100 data-[state=active]:text-rose-700">Bids</TabsTrigger>
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                         <TabsContent value="items" className="space-y-6">
                             <div className="grid gap-6">
                                 {items.map((item) => (
-                                    <Card key={item.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm group">
+                                    <Card key={item.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                         <CardHeader>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex-1">
@@ -498,7 +498,7 @@ export default function AdminDashboard() {
                         <TabsContent value="orders" className="space-y-6">
                             <div className="grid gap-6">
                                 {orders.map((order) => (
-                                    <Card key={order.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm group">
+                                    <Card key={order.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                         <CardHeader>
                                             <div className="flex items-center justify-between">
                                                 <div>
@@ -572,7 +572,7 @@ export default function AdminDashboard() {
                         <TabsContent value="bids" className="space-y-6">
                             <div className="grid gap-6">
                                 {bids.map((bid) => (
-                                    <Card key={bid.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                                    <Card key={bid.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                         <CardHeader>
                                             <div className="flex items-center justify-between">
                                                 <div>
@@ -617,7 +617,7 @@ export default function AdminDashboard() {
                         <TabsContent value="users" className="space-y-6">
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 {users.map((user) => (
-                                    <Card key={user.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm group">
+                                    <Card key={user.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                         <CardHeader>
                                             <div className="flex items-center gap-4">
                                                 <div className="h-14 w-14 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">

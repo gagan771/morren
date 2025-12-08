@@ -32,6 +32,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -51,10 +52,9 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
 
     const navItems = {
         buyer: [
-            { href: "/dashboard/buyer", label: "Dashboard", icon: LayoutDashboard },
-            { href: "/dashboard/buyer?tab=items", label: "Browse Items", icon: ShoppingBag },
-            { href: "/dashboard/buyer?tab=orders", label: "My Orders", icon: Package },
-            { href: "/dashboard/buyer?tab=bids", label: "Bids", icon: TrendingUp },
+            { href: "/dashboard/buyer", label: "Browse Items", icon: ShoppingBag },
+            { href: "/dashboard/buyer?tab=orders", label: "My Bid Requests", icon: Package },
+            { href: "/dashboard/buyer?tab=bids", label: "Seller Bids", icon: TrendingUp },
         ],
         seller: [
             { href: "/dashboard/seller", label: "Dashboard", icon: LayoutDashboard },
@@ -90,7 +90,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Navbar */}
             <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,12 +98,16 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                         {/* Logo and Desktop Nav */}
                         <div className="flex">
                             <div className="flex-shrink-0 flex items-center">
-                                <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${getRoleGradient()} flex items-center justify-center mr-3`}>
-                                    {role === 'buyer' && <ShoppingBag className="h-5 w-5 text-white" />}
-                                    {role === 'seller' && <Store className="h-5 w-5 text-white" />}
-                                    {role === 'admin' && <Shield className="h-5 w-5 text-white" />}
-                                </div>
-                                <span className="font-bold text-xl tracking-tight hidden md:block">MarketPlace</span>
+                                <img 
+                                    src="https://5.imimg.com/data5/SELLER/Logo/2023/1/CD/NH/CF/46836456/12569-comp-image-90x90.png" 
+                                    alt="Logo" 
+                                    className="h-14 w-14 rounded-lg mr-3 object-contain"
+                                />
+                                <span className="font-bold text-xl tracking-tight hidden md:block">
+                                    {role === 'buyer' && 'Buyer Dashboard'}
+                                    {role === 'seller' && 'Seller Dashboard'}
+                                    {role === 'admin' && 'Admin Dashboard'}
+                                </span>
                             </div>
 
                             {/* Desktop Navigation */}
@@ -128,10 +132,13 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                             </div>
                         </div>
 
-                        {/* Right Side: User Profile & Mobile Menu Button */}
-                        <div className="flex items-center">
+                        {/* Right Side: Theme Toggle, User Profile & Mobile Menu Button */}
+                        <div className="flex items-center gap-2">
+                            {/* Theme Toggle */}
+                            <ThemeToggle />
+                            
                             {/* User Dropdown */}
-                            <div className="hidden md:flex items-center ml-4">
+                            <div className="hidden md:flex items-center ml-2">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">

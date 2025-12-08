@@ -4,20 +4,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingCart, Package, DollarSign, TrendingUp, Eye, Plus, Check, X, Clock, Search, Leaf, Wheat, Apple, Nut } from 'lucide-react';
+import { ShoppingCart, Package, DollarSign, TrendingUp, Eye, Plus, Check, X, Clock, Search, Leaf, Wheat, Apple, Nut, List, Trash2, Send } from 'lucide-react';
 import { Item, Order, Bid } from '@/lib/types';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { CardContainer, CardBody, CardItem } from '@/components/ui/aceternity/3d-card';
 import { BackgroundBeams } from '@/components/ui/aceternity/background-beams';
 import { useAuth } from '@/contexts/AuthContext';
 import { getActiveItems, getOrdersByBuyer, getBidsByOrder, createOrder, getBuyerStats, updateBid, updateOrder, createItem } from '@/lib/supabase-api';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
@@ -31,45 +30,45 @@ const PRODUCT_CATALOG = {
         { name: "Cumin (Jeera) - Europe Quality", hsn: "0909", variety: "Europe Quality" },
         { name: "Cumin (Jeera) - Regular", hsn: "0909", variety: "Regular" },
         { name: "Cumin (Jeera) - Bold", hsn: "0909", variety: "Bold" },
-        
+
         // Coriander varieties
         { name: "Coriander Seeds - Eagle Quality", hsn: "0909", variety: "Eagle Quality" },
         { name: "Coriander Seeds - Scooter Quality", hsn: "0909", variety: "Scooter Quality" },
         { name: "Coriander Seeds - Regular", hsn: "0909", variety: "Regular" },
-        
+
         // Mustard varieties
         { name: "Mustard Seeds - Yellow", hsn: "1207", variety: "Yellow" },
         { name: "Mustard Seeds - Black", hsn: "1207", variety: "Black" },
         { name: "Mustard Seeds - Brown", hsn: "1207", variety: "Brown" },
-        
+
         // Fennel varieties
         { name: "Fennel Seeds (Saunf) - Lucknowi", hsn: "0909", variety: "Lucknowi" },
         { name: "Fennel Seeds (Saunf) - Bold", hsn: "0909", variety: "Bold" },
         { name: "Fennel Seeds (Saunf) - Regular", hsn: "0909", variety: "Regular" },
-        
+
         { name: "Fenugreek Seeds (Methi)", hsn: "0910", variety: "Standard" },
         { name: "Carom Seeds (Ajwain) - Bold", hsn: "0910", variety: "Bold" },
         { name: "Carom Seeds (Ajwain) - Regular", hsn: "0910", variety: "Regular" },
         { name: "Nigella Seeds (Kalonji)", hsn: "0910", variety: "Standard" },
-        
+
         // Black Pepper varieties
         { name: "Black Pepper - 500 GL", hsn: "0904", variety: "500 GL" },
         { name: "Black Pepper - 550 GL", hsn: "0904", variety: "550 GL" },
         { name: "Black Pepper - 580 GL", hsn: "0904", variety: "580 GL" },
         { name: "Black Pepper - MG1", hsn: "0904", variety: "MG1 (Malabar Garbled)" },
         { name: "Black Pepper - TGSEB", hsn: "0904", variety: "TGSEB" },
-        
+
         // Cloves varieties
         { name: "Cloves - Hand Picked", hsn: "0907", variety: "Hand Picked" },
         { name: "Cloves - Machine Cleaned", hsn: "0907", variety: "Machine Cleaned" },
         { name: "Cloves - FAQ", hsn: "0907", variety: "FAQ" },
-        
+
         // Cinnamon varieties
         { name: "Cinnamon - Split", hsn: "0906", variety: "Split" },
         { name: "Cinnamon - Quillings", hsn: "0906", variety: "Quillings" },
         { name: "Cinnamon - Stick", hsn: "0906", variety: "Stick" },
         { name: "Cinnamon - Powder", hsn: "0906", variety: "Powder" },
-        
+
         // Cardamom Green varieties
         { name: "Cardamom Green - 5-6mm", hsn: "0908", variety: "5-6mm" },
         { name: "Cardamom Green - 6-7mm", hsn: "0908", variety: "6-7mm" },
@@ -77,32 +76,32 @@ const PRODUCT_CATALOG = {
         { name: "Cardamom Green - 8mm+", hsn: "0908", variety: "8mm+ (Bold)" },
         { name: "Cardamom Green - AGB", hsn: "0908", variety: "AGB (Alleppey Green Bold)" },
         { name: "Cardamom Green - AGS", hsn: "0908", variety: "AGS (Alleppey Green Superior)" },
-        
+
         // Cardamom Black varieties
         { name: "Cardamom Black - Large", hsn: "0908", variety: "Large" },
         { name: "Cardamom Black - Medium", hsn: "0908", variety: "Medium" },
         { name: "Cardamom Black - Small", hsn: "0908", variety: "Small" },
-        
+
         { name: "Bay Leaf (Tej Patta) - Whole", hsn: "0910", variety: "Whole" },
         { name: "Bay Leaf (Tej Patta) - Broken", hsn: "0910", variety: "Broken" },
-        
+
         { name: "Star Anise - Whole", hsn: "0910", variety: "Whole" },
         { name: "Star Anise - Broken", hsn: "0910", variety: "Broken" },
-        
+
         { name: "Mace (Javitri) - Whole", hsn: "0908", variety: "Whole" },
         { name: "Mace (Javitri) - Broken", hsn: "0908", variety: "Broken" },
-        
+
         // Nutmeg varieties
         { name: "Nutmeg (Jaiphal) - With Shell", hsn: "0908", variety: "With Shell" },
         { name: "Nutmeg (Jaiphal) - Without Shell", hsn: "0908", variety: "Without Shell" },
         { name: "Nutmeg (Jaiphal) - Powder", hsn: "0908", variety: "Powder" },
-        
+
         // Turmeric varieties
         { name: "Turmeric Whole - Finger", hsn: "0910", variety: "Finger" },
         { name: "Turmeric Whole - Bulb", hsn: "0910", variety: "Bulb" },
         { name: "Turmeric Whole - Polished", hsn: "0910", variety: "Polished" },
         { name: "Turmeric Whole - Unpolished", hsn: "0910", variety: "Unpolished" },
-        
+
         // Red Chilli varieties
         { name: "Red Chilli Whole - Guntur Sannam S4", hsn: "0904", variety: "Guntur Sannam S4" },
         { name: "Red Chilli Whole - Guntur Teja S17", hsn: "0904", variety: "Guntur Teja S17" },
@@ -110,22 +109,22 @@ const PRODUCT_CATALOG = {
         { name: "Red Chilli Whole - Kashmiri", hsn: "0904", variety: "Kashmiri" },
         { name: "Red Chilli Whole - Wrinkled", hsn: "0904", variety: "Wrinkled" },
         { name: "Red Chilli Whole - Stemless", hsn: "0904", variety: "Stemless" },
-        
+
         { name: "Dry Ginger - Cochin", hsn: "0910", variety: "Cochin" },
         { name: "Dry Ginger - Calicut", hsn: "0910", variety: "Calicut" },
         { name: "Dry Ginger - Bleached", hsn: "0910", variety: "Bleached" },
         { name: "Dry Ginger - Unbleached", hsn: "0910", variety: "Unbleached" },
-        
+
         // Powder varieties
         { name: "Turmeric Powder - 2% Curcumin", hsn: "0910", variety: "2% Curcumin" },
         { name: "Turmeric Powder - 3% Curcumin", hsn: "0910", variety: "3% Curcumin" },
         { name: "Turmeric Powder - 5% Curcumin", hsn: "0910", variety: "5% Curcumin" },
-        
+
         { name: "Red Chilli Powder - Hot", hsn: "0904", variety: "Hot" },
         { name: "Red Chilli Powder - Medium", hsn: "0904", variety: "Medium" },
         { name: "Red Chilli Powder - Mild", hsn: "0904", variety: "Mild" },
         { name: "Red Chilli Powder - Kashmiri", hsn: "0904", variety: "Kashmiri (Color)" },
-        
+
         { name: "Coriander Powder - Regular", hsn: "0909", variety: "Regular" },
         { name: "Cumin Powder - Regular", hsn: "0909", variety: "Regular" },
         { name: "Black Pepper Powder - Regular", hsn: "0904", variety: "Regular" },
@@ -142,7 +141,7 @@ const PRODUCT_CATALOG = {
         { name: "Potato - Chipsona", hsn: "0701", variety: "Chipsona" },
         { name: "Potato - Kufri", hsn: "0701", variety: "Kufri" },
         { name: "Potato - Red", hsn: "0701", variety: "Red" },
-        
+
         // Onion varieties
         { name: "Onion - Red (Nashik)", hsn: "0703", variety: "Red Nashik" },
         { name: "Onion - Red (Bangalore)", hsn: "0703", variety: "Red Bangalore" },
@@ -152,24 +151,24 @@ const PRODUCT_CATALOG = {
         { name: "Onion - 45-55mm", hsn: "0703", variety: "45-55mm" },
         { name: "Onion - 55-65mm", hsn: "0703", variety: "55-65mm" },
         { name: "Onion - 65-75mm", hsn: "0703", variety: "65-75mm" },
-        
+
         // Tomato varieties
         { name: "Tomato - Hybrid", hsn: "0702", variety: "Hybrid" },
         { name: "Tomato - Desi", hsn: "0702", variety: "Desi" },
         { name: "Tomato - Cherry", hsn: "0702", variety: "Cherry" },
         { name: "Tomato - Roma", hsn: "0702", variety: "Roma" },
-        
+
         // Green Chilli varieties
         { name: "Green Chilli - Finger Hot", hsn: "0709", variety: "Finger Hot" },
         { name: "Green Chilli - Jwala", hsn: "0709", variety: "Jwala" },
         { name: "Green Chilli - Bhavnagri", hsn: "0709", variety: "Bhavnagri" },
         { name: "Green Chilli - Bird Eye", hsn: "0709", variety: "Bird Eye" },
-        
+
         // Ginger varieties
         { name: "Ginger - Maran", hsn: "0910", variety: "Maran" },
         { name: "Ginger - Nadia", hsn: "0910", variety: "Nadia" },
         { name: "Ginger - Dry (Saunth)", hsn: "0910", variety: "Dry/Saunth" },
-        
+
         // Garlic varieties
         { name: "Garlic - Single Clove", hsn: "0703", variety: "Single Clove" },
         { name: "Garlic - Multi Clove", hsn: "0703", variety: "Multi Clove" },
@@ -177,7 +176,7 @@ const PRODUCT_CATALOG = {
         { name: "Garlic - 30-35mm", hsn: "0703", variety: "30-35mm" },
         { name: "Garlic - 35-40mm", hsn: "0703", variety: "35-40mm" },
         { name: "Garlic - 40mm+", hsn: "0703", variety: "40mm+" },
-        
+
         { name: "Carrot - Orange", hsn: "0706", variety: "Orange" },
         { name: "Carrot - Red", hsn: "0706", variety: "Red" },
         { name: "Beans - French", hsn: "0708", variety: "French" },
@@ -216,51 +215,51 @@ const PRODUCT_CATALOG = {
         { name: "Toor Dal - Unpolished", hsn: "0713", variety: "Unpolished" },
         { name: "Toor Dal - Oily", hsn: "0713", variety: "Oily" },
         { name: "Toor Dal - Tatapuri", hsn: "0713", variety: "Tatapuri" },
-        
+
         // Chana Dal varieties
         { name: "Chana Dal - Bold", hsn: "0713", variety: "Bold" },
         { name: "Chana Dal - Medium", hsn: "0713", variety: "Medium" },
         { name: "Chana Dal - Small", hsn: "0713", variety: "Small" },
-        
+
         // Moong Dal varieties
         { name: "Moong Dal - Yellow Split", hsn: "0713", variety: "Yellow Split" },
         { name: "Moong Dal - Green Whole", hsn: "0713", variety: "Green Whole" },
         { name: "Moong Dal - Washed", hsn: "0713", variety: "Washed" },
         { name: "Moong Dal - Chilka", hsn: "0713", variety: "Chilka (Split with Skin)" },
-        
+
         // Urad Dal varieties
         { name: "Urad Dal - Black Whole", hsn: "0713", variety: "Black Whole" },
         { name: "Urad Dal - White Split", hsn: "0713", variety: "White Split" },
         { name: "Urad Dal - Chilka", hsn: "0713", variety: "Chilka (Split with Skin)" },
-        
+
         // Masoor Dal varieties
         { name: "Masoor Dal - Red Whole", hsn: "0713", variety: "Red Whole" },
         { name: "Masoor Dal - Red Split", hsn: "0713", variety: "Red Split" },
         { name: "Masoor Dal - Brown", hsn: "0713", variety: "Brown" },
-        
+
         // Rajma varieties
         { name: "Rajma - Chitra", hsn: "0713", variety: "Chitra" },
         { name: "Rajma - Kashmiri", hsn: "0713", variety: "Kashmiri (Red)" },
         { name: "Rajma - Jammu", hsn: "0713", variety: "Jammu" },
         { name: "Rajma - Red", hsn: "0713", variety: "Red" },
         { name: "Rajma - White", hsn: "0713", variety: "White" },
-        
+
         // Kabuli Chana varieties
         { name: "Kabuli Chana - 8mm", hsn: "0713", variety: "8mm" },
         { name: "Kabuli Chana - 9mm", hsn: "0713", variety: "9mm" },
         { name: "Kabuli Chana - 10mm", hsn: "0713", variety: "10mm" },
         { name: "Kabuli Chana - 11mm", hsn: "0713", variety: "11mm" },
         { name: "Kabuli Chana - 12mm+", hsn: "0713", variety: "12mm+ (Jumbo)" },
-        
+
         { name: "Black Chana - Desi", hsn: "0713", variety: "Desi" },
         { name: "Black Chana - Kala Chana", hsn: "0713", variety: "Kala Chana" },
-        
+
         { name: "Green Moong - Whole", hsn: "0713", variety: "Whole" },
         { name: "Green Moong - Split", hsn: "0713", variety: "Split" },
-        
+
         { name: "Lobia (Black Eyed Beans)", hsn: "0713", variety: "Standard" },
         { name: "Horse Gram", hsn: "0713", variety: "Standard" },
-        
+
         // Yellow Peas varieties
         { name: "Yellow Peas - Whole", hsn: "0713", variety: "Whole" },
         { name: "Yellow Peas - Split", hsn: "0713", variety: "Split" }
@@ -276,7 +275,7 @@ const PRODUCT_CATALOG = {
         { name: "Almonds - 27/30", hsn: "0802", variety: "27/30 Count" },
         { name: "Almonds - Sliced", hsn: "0802", variety: "Sliced" },
         { name: "Almonds - Blanched", hsn: "0802", variety: "Blanched" },
-        
+
         // Cashews varieties
         { name: "Cashews - W180", hsn: "0801", variety: "W180 (King Size)" },
         { name: "Cashews - W210", hsn: "0801", variety: "W210" },
@@ -288,7 +287,7 @@ const PRODUCT_CATALOG = {
         { name: "Cashews - LWP (Large White Pieces)", hsn: "0801", variety: "LWP" },
         { name: "Cashews - SWP (Small White Pieces)", hsn: "0801", variety: "SWP" },
         { name: "Cashews - BB (Butts)", hsn: "0801", variety: "BB (Butts)" },
-        
+
         // Pistachios varieties
         { name: "Pistachios - Iranian", hsn: "0802", variety: "Iranian" },
         { name: "Pistachios - American", hsn: "0802", variety: "American" },
@@ -296,7 +295,7 @@ const PRODUCT_CATALOG = {
         { name: "Pistachios - Raw", hsn: "0802", variety: "Raw" },
         { name: "Pistachios - 21/25", hsn: "0802", variety: "21/25 Count" },
         { name: "Pistachios - 26/30", hsn: "0802", variety: "26/30 Count" },
-        
+
         // Walnuts varieties
         { name: "Walnuts - Chile", hsn: "0802", variety: "Chile" },
         { name: "Walnuts - Kashmir", hsn: "0802", variety: "Kashmir" },
@@ -304,7 +303,7 @@ const PRODUCT_CATALOG = {
         { name: "Walnuts - In Shell", hsn: "0802", variety: "In Shell" },
         { name: "Walnuts - Kernels Light Halves", hsn: "0802", variety: "Kernels LH" },
         { name: "Walnuts - Kernels Light Pieces", hsn: "0802", variety: "Kernels LP" },
-        
+
         // Raisins varieties
         { name: "Raisins - Green (Kishmish)", hsn: "0806", variety: "Green Kishmish" },
         { name: "Raisins - Golden", hsn: "0806", variety: "Golden" },
@@ -313,12 +312,12 @@ const PRODUCT_CATALOG = {
         { name: "Raisins - Munakka", hsn: "0806", variety: "Munakka" },
         { name: "Raisins - Afghan", hsn: "0806", variety: "Afghan" },
         { name: "Raisins - Indian", hsn: "0806", variety: "Indian" },
-        
+
         // Fig varieties
         { name: "Fig (Anjeer) - Dried", hsn: "0804", variety: "Dried" },
         { name: "Fig (Anjeer) - Turkish", hsn: "0804", variety: "Turkish" },
         { name: "Fig (Anjeer) - Afghan", hsn: "0804", variety: "Afghan" },
-        
+
         // Dates varieties
         { name: "Dates - Medjool", hsn: "0804", variety: "Medjool" },
         { name: "Dates - Ajwa", hsn: "0804", variety: "Ajwa" },
@@ -327,18 +326,18 @@ const PRODUCT_CATALOG = {
         { name: "Dates - Mabroom", hsn: "0804", variety: "Mabroom" },
         { name: "Dates - Deglet Noor", hsn: "0804", variety: "Deglet Noor" },
         { name: "Dates - Khudri", hsn: "0804", variety: "Khudri" },
-        
+
         // Apricot varieties
         { name: "Apricot - Turkish", hsn: "0813", variety: "Turkish" },
         { name: "Apricot - Ladakhi", hsn: "0813", variety: "Ladakhi" },
         { name: "Apricot - Hunza", hsn: "0813", variety: "Hunza" },
-        
+
         // Makhana varieties
         { name: "Fox Nuts (Makhana) - 4 Sut", hsn: "0812", variety: "4 Sut (Large)" },
         { name: "Fox Nuts (Makhana) - 3 Sut", hsn: "0812", variety: "3 Sut (Medium)" },
         { name: "Fox Nuts (Makhana) - 2 Sut", hsn: "0812", variety: "2 Sut (Small)" },
         { name: "Fox Nuts (Makhana) - Roasted", hsn: "0812", variety: "Roasted" },
-        
+
         { name: "Brazil Nuts - In Shell", hsn: "0801", variety: "In Shell" },
         { name: "Brazil Nuts - Kernels", hsn: "0801", variety: "Kernels" },
         { name: "Hazelnuts - In Shell", hsn: "0802", variety: "In Shell" },
@@ -383,9 +382,23 @@ const QUALITY_GRADES = [
     { value: 'small', label: 'Small Grade', description: 'Smaller size grade' },
 ];
 
+// Indian States and Union Territories
+const INDIAN_STATES = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+    'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+];
+
 export default function BuyerDashboard() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const currentTab = searchParams.get('tab') || 'items'; // Default to items (Browse Items)
     const { toast } = useToast();
     const [items, setItems] = useState<Item[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -414,17 +427,57 @@ export default function BuyerDashboard() {
     });
     const [specKey, setSpecKey] = useState('');
     const [specValue, setSpecValue] = useState('');
-    
+
     // Catalog search states
     const [catalogSearchQuery, setCatalogSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [isSelectProductDialogOpen, setIsSelectProductDialogOpen] = useState(false);
 
+    // Item browsing filters
+    const [itemSearchQuery, setItemSearchQuery] = useState('');
+    const [itemCategoryFilter, setItemCategoryFilter] = useState<string>('all');
+
+    // Place Bid form (enhanced)
+    const [isPlaceBidDialogOpen, setIsPlaceBidDialogOpen] = useState(false);
+    const [bidForm, setBidForm] = useState({
+        productName: '',
+        hsnCode: '',
+        size: '',
+        specification: '',
+        quality: '',
+        quantity: '',
+        expectedDeliveryDate: '',
+        pincode: '',
+        city: '',
+        state: '',
+        shippingAddress: '',
+        notes: '',
+    });
+    const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<CatalogProduct | null>(null);
+
+    // Add to List Dialog
+    const [isAddToListDialogOpen, setIsAddToListDialogOpen] = useState(false);
+    const [addToListForm, setAddToListForm] = useState({
+        productName: '',
+        hsnCode: '',
+        size: '',
+        specification: '',
+        quality: '',
+        quantity: '',
+        expectedDeliveryDate: '',
+        pincode: '',
+        city: '',
+        state: '',
+        shippingAddress: '',
+        notes: '',
+    });
+    const [selectedProductForList, setSelectedProductForList] = useState<CatalogProduct | null>(null);
+
     // Filter catalog products based on search query and category
     const filteredCatalogProducts = useMemo(() => {
         return ALL_PRODUCTS.filter(product => {
             const searchLower = catalogSearchQuery.toLowerCase();
-            const matchesSearch = catalogSearchQuery === '' || 
+            const matchesSearch = catalogSearchQuery === '' ||
                 product.name.toLowerCase().includes(searchLower) ||
                 product.hsn.includes(catalogSearchQuery) ||
                 product.variety.toLowerCase().includes(searchLower);
@@ -433,16 +486,51 @@ export default function BuyerDashboard() {
         });
     }, [catalogSearchQuery, selectedCategory]);
 
+    // Filter items for browsing based on search and category
+    const filteredItems = useMemo(() => {
+        return items.filter(item => {
+            const searchLower = itemSearchQuery.toLowerCase();
+            const matchesSearch = itemSearchQuery === '' ||
+                item.name.toLowerCase().includes(searchLower) ||
+                item.description?.toLowerCase().includes(searchLower) ||
+                item.category?.toLowerCase().includes(searchLower);
+            const matchesCategory = itemCategoryFilter === 'all' ||
+                item.category?.toLowerCase().includes(itemCategoryFilter.toLowerCase());
+            return matchesSearch && matchesCategory;
+        });
+    }, [items, itemSearchQuery, itemCategoryFilter]);
+
+    // Get unique categories from items
+    const itemCategories = useMemo(() => {
+        const categories = new Set(items.map(item => item.category).filter(Boolean));
+        return Array.from(categories);
+    }, [items]);
+
+    // Size options for bid form
+    const SIZE_OPTIONS = [
+        { value: '1kg', label: '1 kg' },
+        { value: '5kg', label: '5 kg' },
+        { value: '10kg', label: '10 kg' },
+        { value: '25kg', label: '25 kg' },
+        { value: '50kg', label: '50 kg' },
+        { value: '100kg', label: '100 kg' },
+        { value: '500kg', label: '500 kg' },
+        { value: '1ton', label: '1 Ton' },
+        { value: '5ton', label: '5 Tons' },
+        { value: '10ton', label: '10 Tons' },
+        { value: 'container', label: 'Container Load' },
+    ];
+
     // Select a product from catalog
     const selectCatalogProduct = (product: CatalogProduct) => {
         setProductForm({
             ...productForm,
             name: product.name,
             category: product.category,
-            specifications: { 
-                ...productForm.specifications, 
+            specifications: {
+                ...productForm.specifications,
                 'HSN Code': product.hsn,
-                'Variety/Grade': product.variety 
+                'Variety/Grade': product.variety
             }
         });
         setIsSelectProductDialogOpen(false);
@@ -451,26 +539,147 @@ export default function BuyerDashboard() {
         setSelectedCategory('all');
     };
 
+    // Select a product from catalog for bid request
+    const selectCatalogProductForBid = (product: CatalogProduct) => {
+        setSelectedCatalogProduct(product);
+        setBidForm({
+            ...bidForm,
+            productName: product.name,
+            hsnCode: product.hsn,
+            specification: product.variety,
+        });
+        setIsSelectProductDialogOpen(false);
+        setIsPlaceBidDialogOpen(true);
+        setCatalogSearchQuery('');
+        setSelectedCategory('all');
+    };
+
+    // Select a product from catalog for adding to list
+    const selectCatalogProductForList = (product: CatalogProduct) => {
+        setSelectedProductForList(product);
+        setAddToListForm({
+            ...addToListForm,
+            productName: product.name,
+            hsnCode: product.hsn,
+            specification: product.variety,
+        });
+        setIsSelectProductDialogOpen(false);
+        setIsAddToListDialogOpen(true);
+        setCatalogSearchQuery('');
+        setSelectedCategory('all');
+    };
+
+    // Add item to saved list AND create in database
+    const [addingToList, setAddingToList] = useState(false);
+    
+    const handleAddToList = async () => {
+        if (!user) {
+            toast({
+                title: "Error",
+                description: "You must be logged in to add items.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!addToListForm.productName || !addToListForm.quantity) {
+            toast({
+                title: "Validation Error",
+                description: "Please fill in at least Product Name and Quantity.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const quantity = parseInt(addToListForm.quantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({
+                title: "Validation Error",
+                description: "Please enter a valid quantity.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setAddingToList(true);
+        try {
+            // Create the item in the database so it appears in the items grid
+            await createItem({
+                name: addToListForm.productName,
+                description: `${addToListForm.specification || addToListForm.productName}${addToListForm.notes ? ` - ${addToListForm.notes}` : ''}`,
+                image: '/api/placeholder/400/300',
+                price: 0, // Price will be determined by bids
+                size: addToListForm.size || 'As specified',
+                category: selectedProductForList?.category || 'General',
+                condition: 'new',
+                quantity: quantity,
+                specifications: {
+                    ...(addToListForm.hsnCode && { 'HSN Code': addToListForm.hsnCode }),
+                    ...(addToListForm.specification && { 'Specification': addToListForm.specification }),
+                    ...(addToListForm.quality && { 'Quality Grade': QUALITY_GRADES.find(g => g.value === addToListForm.quality)?.label || addToListForm.quality }),
+                    ...(addToListForm.expectedDeliveryDate && { 'Expected Delivery': addToListForm.expectedDeliveryDate }),
+                    ...(addToListForm.city && addToListForm.state && { 'Location': `${addToListForm.city}, ${addToListForm.state} - ${addToListForm.pincode}` }),
+                },
+                sellerId: user.id, // Buyer creates the item
+                status: 'active',
+            });
+
+            toast({
+                title: "Item Added! 🎉",
+                description: `${addToListForm.productName} has been added and is now visible in the items list.`,
+            });
+
+            setIsAddToListDialogOpen(false);
+            setAddToListForm({
+                productName: '',
+                hsnCode: '',
+                size: '',
+                specification: '',
+                quality: '',
+                quantity: '',
+                expectedDeliveryDate: '',
+                pincode: '',
+                city: '',
+                state: '',
+                shippingAddress: '',
+                notes: '',
+            });
+            setSelectedProductForList(null);
+
+            // Refresh to show the new item in the grid
+            await fetchData();
+        } catch (error: any) {
+            console.error('Error adding item:', error);
+            toast({
+                title: "Error",
+                description: error?.message || "Failed to add item. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setAddingToList(false);
+        }
+    };
+
     useEffect(() => {
         // Wait for auth to finish loading
         if (authLoading) {
             return;
         }
-        
+
         // If no user after auth is done loading, redirect to login
         if (!user) {
             console.log('No user found, redirecting to auth');
             router.replace('/auth?role=buyer');
             return;
         }
-        
+
         // If user is not a buyer, redirect to their dashboard
         if (user.role !== 'buyer') {
             console.log('User is not a buyer, redirecting to:', user.role);
             router.replace(`/dashboard/${user.role}`);
             return;
         }
-        
+
         // User is authenticated and is a buyer, fetch data
         console.log('Buyer authenticated, fetching data');
         fetchData();
@@ -558,7 +767,7 @@ export default function BuyerDashboard() {
             setIsOrderDialogOpen(false);
             setOrderForm({ quantity: '', shippingAddress: '', notes: '' });
             setSelectedItem(null);
-            
+
             // Refresh data immediately
             await fetchData();
         } catch (error: any) {
@@ -570,6 +779,117 @@ export default function BuyerDashboard() {
             });
         } finally {
             setPlacingOrder(false);
+        }
+    };
+
+    const [placingBidRequest, setPlacingBidRequest] = useState(false);
+
+    const handlePlaceBidRequest = async () => {
+        if (!user) {
+            toast({
+                title: "Error",
+                description: "You must be logged in to place a bid request.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Validation
+        if (!bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.pincode || !bidForm.city || !bidForm.state) {
+            toast({
+                title: "Validation Error",
+                description: "Please fill in all required fields (Product, Quantity, Pincode, City, State, Shipping Address, Expected Delivery Date).",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Validate pincode (6 digits for India)
+        if (bidForm.pincode.length !== 6) {
+            toast({
+                title: "Validation Error",
+                description: "Please enter a valid 6-digit pincode.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const quantity = parseInt(bidForm.quantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({
+                title: "Validation Error",
+                description: "Please enter a valid quantity.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setPlacingBidRequest(true);
+        try {
+            // First create the item if it doesn't exist
+            const newItem = await createItem({
+                name: bidForm.productName,
+                description: `Bid Request: ${bidForm.productName}${bidForm.specification ? ` - ${bidForm.specification}` : ''}`,
+                image: '/api/placeholder/400/300',
+                price: 0, // Price will be determined by bids
+                size: bidForm.size || 'As specified',
+                category: selectedCatalogProduct?.category || 'General',
+                condition: 'new',
+                quantity: quantity,
+                specifications: {
+                    ...(bidForm.hsnCode && { 'HSN Code': bidForm.hsnCode }),
+                    ...(bidForm.specification && { 'Specification': bidForm.specification }),
+                    ...(bidForm.quality && { 'Quality Grade': QUALITY_GRADES.find(g => g.value === bidForm.quality)?.label || bidForm.quality }),
+                    'Expected Delivery': bidForm.expectedDeliveryDate,
+                },
+                sellerId: user.id, // Buyer creates the request
+                status: 'active',
+            });
+
+            // Then create the order/bid request
+            const fullAddress = `${bidForm.shippingAddress}, ${bidForm.city}, ${bidForm.state} - ${bidForm.pincode}`;
+            await createOrder({
+                itemId: newItem.id,
+                buyerId: user.id,
+                quantity: quantity,
+                totalPrice: 0, // Will be determined by accepted bid
+                status: 'pending',
+                shippingAddress: fullAddress,
+                notes: bidForm.notes || `Bid request for ${bidForm.productName}. Quality: ${bidForm.quality || 'Not specified'}. Size: ${bidForm.size || 'Not specified'}.`,
+            });
+
+            toast({
+                title: "Bid Request Placed! 🎉",
+                description: `Your bid request for ${bidForm.productName} has been placed. Sellers can now submit their bids.`,
+            });
+
+            setIsPlaceBidDialogOpen(false);
+            setBidForm({
+                productName: '',
+                hsnCode: '',
+                size: '',
+                specification: '',
+                quality: '',
+                quantity: '',
+                expectedDeliveryDate: '',
+                pincode: '',
+                city: '',
+                state: '',
+                shippingAddress: '',
+                notes: '',
+            });
+            setSelectedCatalogProduct(null);
+
+            await fetchData();
+        } catch (error: any) {
+            console.error('Error creating bid request:', error);
+            toast({
+                title: "Error",
+                description: error?.message || "Failed to place bid request. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setPlacingBidRequest(false);
         }
     };
 
@@ -588,12 +908,12 @@ export default function BuyerDashboard() {
             await updateBid(bidId, { status: 'accepted' });
             // Also update the order status to accepted
             await updateOrder(bid.orderId, { status: 'accepted' });
-            
+
             toast({
                 title: "Bid Accepted! ✅",
                 description: `You've accepted the bid. The vendor will be notified.`,
             });
-            
+
             await fetchData();
         } catch (error: any) {
             console.error('Error accepting bid:', error);
@@ -608,14 +928,14 @@ export default function BuyerDashboard() {
     const handleRejectBid = async (bidId: string) => {
         try {
             const bid = bids.find(b => b.id === bidId);
-            
+
             await updateBid(bidId, { status: 'rejected' });
-            
+
             toast({
                 title: "Bid Rejected",
                 description: `The bid has been rejected.`,
             });
-            
+
             await fetchData();
         } catch (error: any) {
             console.error('Error rejecting bid:', error);
@@ -630,7 +950,7 @@ export default function BuyerDashboard() {
     const handleUpdateOrderStatus = async (orderId: string, newStatus: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled') => {
         try {
             await updateOrder(orderId, { status: newStatus });
-            
+
             const statusMessages: Record<string, string> = {
                 'completed': 'Order marked as completed',
                 'cancelled': 'Order cancelled',
@@ -638,12 +958,12 @@ export default function BuyerDashboard() {
                 'accepted': 'Order accepted',
                 'rejected': 'Order rejected',
             };
-            
+
             toast({
                 title: "Status Updated",
                 description: statusMessages[newStatus] || "Order status updated successfully.",
             });
-            
+
             await fetchData();
         } catch (error: any) {
             console.error('Error updating order status:', error);
@@ -668,7 +988,7 @@ export default function BuyerDashboard() {
         }
 
         // Validation
-        if (!productForm.name || !productForm.description || !productForm.price || 
+        if (!productForm.name || !productForm.description || !productForm.price ||
             !productForm.size || !productForm.category || !productForm.quantity) {
             toast({
                 title: "Validation Error",
@@ -741,7 +1061,7 @@ export default function BuyerDashboard() {
             });
             setSpecKey('');
             setSpecValue('');
-            
+
             await fetchData();
         } catch (error: any) {
             console.error('Error creating product:', error);
@@ -774,9 +1094,13 @@ export default function BuyerDashboard() {
 
     const stats = {
         totalOrders: orders.length,
+        confirmedOrders: orders.filter(o => o.status === 'accepted').length,
+        deliveryPending: orders.filter(o => o.status === 'accepted' || o.status === 'pending').length,
         pendingOrders: orders.filter(o => o.status === 'pending').length,
+        completedOrders: orders.filter(o => o.status === 'completed').length,
         totalSpent: orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.totalPrice || 0), 0),
         activeBids: bids.filter(b => b.status === 'pending').length,
+        totalItems: items.length,
     };
 
     const getStatusColor = (status: string) => {
@@ -811,8 +1135,8 @@ export default function BuyerDashboard() {
         <DashboardLayout role="buyer">
             <Toaster />
             <div className="relative min-h-[calc(100vh-4rem)]">
-                {/* Background Effect */}
-                <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
+                {/* Background Effect - Only visible in dark mode */}
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-0 dark:opacity-50">
                     <BackgroundBeams />
                 </div>
 
@@ -823,246 +1147,435 @@ export default function BuyerDashboard() {
                             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                                 Welcome back, {user.name}
                             </h1>
-                            <p className="text-muted-foreground mt-1">Here's what's happening with your orders today.</p>
+                            <p className="text-gray-600 dark:text-gray-400 mt-1">Here's what's happening with your orders today.</p>
                         </div>
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
-                                className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                                className="border-gray-300 hover:bg-gray-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
                                 onClick={() => setIsSelectProductDialogOpen(true)}
                             >
                                 <Search className="mr-2 h-4 w-4" />
-                                Select from Catalog
+                                Browse Catalog
                             </Button>
                             <Button
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/20 transition-all hover:scale-105"
-                                onClick={() => setIsAddProductDialogOpen(true)}
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md transition-all hover:scale-105"
+                                onClick={() => setIsAddToListDialogOpen(true)}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add Custom Product
+                                Add New Item
                             </Button>
                         </div>
                     </div>
 
                     {/* Stats Cards */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                                     <ShoppingCart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalOrders}</div>
-                                <p className="text-xs text-muted-foreground mt-1">All time orders placed</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">All time orders placed</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Pending Orders</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Confirmed Orders</CardTitle>
+                                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.confirmedOrders}</div>
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Orders accepted by sellers</p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Delivery Pending</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                     <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pendingOrders}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Awaiting confirmation</p>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.deliveryPending}</div>
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Awaiting delivery</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Total Spent</CardTitle>
-                                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                    <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">${stats.totalSpent.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Lifetime spending</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Active Bids</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Live Bids</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                                     <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.activeBids}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Pending seller bids</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Bids awaiting your response</p>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Main Content */}
-                    <Tabs defaultValue="items" className="space-y-6">
-                        <TabsList className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm p-1 border border-gray-200 dark:border-gray-800 rounded-xl">
-                            <TabsTrigger value="items" className="rounded-lg data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">Browse Items</TabsTrigger>
-                            <TabsTrigger value="orders" className="rounded-lg data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">My Orders</TabsTrigger>
-                            <TabsTrigger value="bids" className="rounded-lg data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">Seller Bids</TabsTrigger>
-                        </TabsList>
+                    {/* Place New Bid Request Button */}
+                    <div className="flex justify-center">
+                        <Button
+                            size="lg"
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg transition-all hover:scale-105 px-8"
+                            onClick={() => setIsPlaceBidDialogOpen(true)}
+                        >
+                            <Plus className="mr-2 h-5 w-5" />
+                            Place New Bid Request
+                        </Button>
+                    </div>
 
+                    {/* Main Content - Based on URL tab parameter */}
+                    <div className="space-y-6">
                         {/* Browse Items Tab */}
-                        <TabsContent value="items" className="space-y-6">
-                            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                                {items.map((item) => (
-                                    <CardContainer key={item.id} className="inter-var w-full">
-                                        <CardBody className="bg-white dark:bg-gray-950 relative group/card dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] dark:border-white/[0.2] border-black/[0.1] w-full h-auto rounded-xl p-6 border shadow-xl">
-                                            <CardItem
-                                                translateZ="50"
-                                                className="text-xl font-bold text-neutral-600 dark:text-white"
-                                            >
-                                                {item.name}
-                                            </CardItem>
-                                            <CardItem
-                                                as="p"
-                                                translateZ="60"
-                                                className="text-neutral-500 text-sm max-w-sm mt-2 dark:text-neutral-300 line-clamp-2"
-                                            >
-                                                {item.description}
-                                            </CardItem>
-                                            <CardItem translateZ="100" className="w-full mt-4">
-                                                <div className="flex items-center justify-center w-full h-40 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl group-hover/card:shadow-xl">
-                                                    <Package className="h-16 w-16 text-purple-500/50" />
-                                                </div>
-                                            </CardItem>
-                                            <div className="flex justify-between items-center mt-8">
-                                                <CardItem
-                                                    translateZ={20}
-                                                    className="px-4 py-2 rounded-xl text-xs font-normal dark:text-white"
-                                                >
-                                                    <span className="text-2xl font-bold text-purple-600">${item.price}</span>
-                                                    <span className="text-muted-foreground ml-1">/ {item.size}</span>
-                                                </CardItem>
-                                                <CardItem
-                                                    translateZ={20}
-                                                    as="button"
-                                                    className="px-4 py-2 rounded-xl bg-black dark:bg-white dark:text-black text-white text-xs font-bold"
-                                                    onClick={() => {
-                                                        setSelectedItem(item);
-                                                        setIsItemDetailsDialogOpen(true);
-                                                    }}
-                                                >
-                                                    View Details
-                                                </CardItem>
+                        {(currentTab === 'items' || !currentTab) && (
+                            <div className="space-y-6">
+                                {/* Category Filter and Search */}
+                                <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900">
+                                    <CardContent className="p-4">
+                                        <div className="flex flex-col gap-4">
+                                            {/* Search Box */}
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Search items by name, description, or category..."
+                                                    value={itemSearchQuery}
+                                                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                                                    className="pl-10"
+                                                />
                                             </div>
-                                        </CardBody>
-                                    </CardContainer>
-                                ))}
+
+                                            {/* Category Filter Badges */}
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge
+                                                    variant={itemCategoryFilter === 'all' ? 'default' : 'outline'}
+                                                    className="cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors px-3 py-1"
+                                                    onClick={() => setItemCategoryFilter('all')}
+                                                >
+                                                    All Items ({items.length})
+                                                </Badge>
+                                                <Badge
+                                                    variant={itemCategoryFilter === 'spices' ? 'default' : 'outline'}
+                                                    className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors px-3 py-1"
+                                                    onClick={() => setItemCategoryFilter('spices')}
+                                                >
+                                                    🌶️ Spices
+                                                </Badge>
+                                                <Badge
+                                                    variant={itemCategoryFilter === 'vegetables' ? 'default' : 'outline'}
+                                                    className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors px-3 py-1"
+                                                    onClick={() => setItemCategoryFilter('vegetables')}
+                                                >
+                                                    🥬 Vegetables
+                                                </Badge>
+                                                <Badge
+                                                    variant={itemCategoryFilter === 'pulses' ? 'default' : 'outline'}
+                                                    className="cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors px-3 py-1"
+                                                    onClick={() => setItemCategoryFilter('pulses')}
+                                                >
+                                                    🫘 Pulses
+                                                </Badge>
+                                                <Badge
+                                                    variant={itemCategoryFilter === 'dry fruits' ? 'default' : 'outline'}
+                                                    className="cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors px-3 py-1"
+                                                    onClick={() => setItemCategoryFilter('dry fruits')}
+                                                >
+                                                    🥜 Dry Fruits & Nuts
+                                                </Badge>
+                                            </div>
+
+                                            {/* Quick Action - Place Bid Request */}
+                                            <div className="flex items-center justify-between pt-2 border-t">
+                                                <p className="text-sm text-muted-foreground">
+                                                    {filteredItems.length} items found
+                                                    {itemSearchQuery && ` for "${itemSearchQuery}"`}
+                                                </p>
+                                                <Button
+                                                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                                                    onClick={() => setIsPlaceBidDialogOpen(true)}
+                                                >
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    Place Bid Request
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Items Grid */}
+                                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                    {filteredItems.map((item) => (
+                                        <CardContainer key={item.id} className="inter-var w-full">
+                                            <CardBody className="bg-white dark:bg-gray-950 relative group/card hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] border-gray-200 dark:border-white/[0.2] w-full h-auto rounded-xl p-6 border shadow-sm">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <CardItem
+                                                        translateZ="50"
+                                                        className="text-xl font-bold text-gray-900 dark:text-white"
+                                                    >
+                                                        {item.name}
+                                                    </CardItem>
+                                                    {item.category && (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            {item.category}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <CardItem
+                                                    as="p"
+                                                    translateZ="60"
+                                                    className="text-gray-600 dark:text-gray-300 text-sm max-w-sm mt-2 line-clamp-2"
+                                                >
+                                                    {item.description}
+                                                </CardItem>
+                                                <CardItem translateZ="100" className="w-full mt-4">
+                                                    <div className="flex items-center justify-center w-full h-40 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl group-hover/card:shadow-xl">
+                                                        <Package className="h-16 w-16 text-purple-400" />
+                                                    </div>
+                                                </CardItem>
+                                                <div className="flex justify-between items-center mt-8">
+                                                    <CardItem
+                                                        translateZ={20}
+                                                        className="px-4 py-2 rounded-xl text-xs font-normal"
+                                                    >
+                                                        <span className="text-2xl font-bold text-purple-600">${item.price}</span>
+                                                        <span className="text-gray-500 ml-1">/ {item.size}</span>
+                                                    </CardItem>
+                                                    <CardItem
+                                                        translateZ={20}
+                                                        as="button"
+                                                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
+                                                        onClick={() => {
+                                                            setSelectedItem(item);
+                                                            setIsItemDetailsDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        View Details
+                                                    </CardItem>
+                                                </div>
+                                            </CardBody>
+                                        </CardContainer>
+                                    ))}
+
+                                    {filteredItems.length === 0 && (
+                                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                                            <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                                            <h3 className="font-semibold text-lg">No items found</h3>
+                                            <p className="text-muted-foreground text-sm mt-1">
+                                                Try a different search term or category filter
+                                            </p>
+                                            <Button
+                                                variant="link"
+                                                onClick={() => {
+                                                    setItemSearchQuery('');
+                                                    setItemCategoryFilter('all');
+                                                }}
+                                            >
+                                                Clear filters
+                                            </Button>
+                                        </div>
+                                    )}                            </div>
                             </div>
-                        </TabsContent>
+                        )}
 
                         {/* My Orders Tab */}
-                        <TabsContent value="orders" className="space-y-4">
-                            <div className="grid gap-4">
-                                {orders.map((order) => (
-                                    <Card key={order.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                        <CardHeader>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                                        <Package className="h-6 w-6 text-purple-600" />
+                        {currentTab === 'orders' && (
+                            <div className="space-y-4">
+                                <div className="grid gap-4">
+                                    {orders.map((order) => (
+                                        <Card key={order.id} className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900">
+                                            <CardHeader>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                                            <Package className="h-6 w-6 text-purple-600" />
+                                                        </div>
+                                                        <div>
+                                                            <CardTitle>{order.item?.name || 'Unknown Item'}</CardTitle>
+                                                            <CardDescription>Order #{order.id.slice(0, 8)} • {new Date(order.createdAt).toLocaleDateString()}</CardDescription>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <CardTitle>{order.item?.name || 'Unknown Item'}</CardTitle>
-                                                        <CardDescription>Order #{order.id.slice(0, 8)} • {new Date(order.createdAt).toLocaleDateString()}</CardDescription>
+                                                    <Badge variant="outline" className={getStatusColor(order.status)}>{order.status}</Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</Label>
+                                                        <p className="font-semibold">{order.quantity} units</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Total Price</Label>
+                                                        <p className="font-semibold text-purple-600">${(order.totalPrice || 0).toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-semibold capitalize">{order.status}</p>
+                                                            {order.status === 'pending' && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                                                                    className="h-6 text-xs"
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                            )}
+                                                            {order.status === 'accepted' && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                                                                    className="h-6 text-xs"
+                                                                >
+                                                                    Mark Complete
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Updated</Label>
+                                                        <p className="font-semibold">{new Date(order.updatedAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
-                                                <Badge variant="outline" className={getStatusColor(order.status)}>{order.status}</Badge>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</Label>
-                                                    <p className="font-semibold">{order.quantity} units</p>
-                                                </div>
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Total Price</Label>
-                                                    <p className="font-semibold text-purple-600">${(order.totalPrice || 0).toFixed(2)}</p>
-                                                </div>
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-semibold capitalize">{order.status}</p>
-                                                        {order.status === 'pending' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                                                                className="h-6 text-xs"
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        )}
-                                                        {order.status === 'accepted' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
-                                                                className="h-6 text-xs"
-                                                            >
-                                                                Mark Complete
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Updated</Label>
-                                                    <p className="font-semibold">{new Date(order.updatedAt).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
                             </div>
-                        </TabsContent>
+                        )}
 
                         {/* Seller Bids Tab */}
-                        <TabsContent value="bids" className="space-y-4">
-                            <div className="grid gap-4">
-                                {bids.map((bid) => (
-                                    <Card key={bid.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500" />
-                                        <CardHeader>
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <CardTitle>Bid from Vendor #{bid.id.slice(0, 6).toUpperCase()}</CardTitle>
-                                                    <CardDescription>
-                                                        Order #{bid.orderId.slice(0, 8)} • {new Date(bid.createdAt).toLocaleDateString()}
-                                                    </CardDescription>
+                        {currentTab === 'bids' && (
+                            <div className="space-y-4">
+                                <div className="grid gap-4">
+                                    {bids.map((bid) => (
+                                        <Card key={bid.id} className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900 overflow-hidden relative">
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500" />
+                                            <CardHeader>
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <CardTitle className="text-gray-900 dark:text-gray-100">Bid from Vendor #{bid.id.slice(0, 6).toUpperCase()}</CardTitle>
+                                                        <CardDescription>
+                                                            Order #{bid.orderId.slice(0, 8)} • {new Date(bid.createdAt).toLocaleDateString()}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
                                                 </div>
-                                                <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Bid Amount</Label>
-                                                    <p className="text-xl font-bold text-purple-600">${bid.bidAmount.toFixed(2)}</p>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3">
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                        <Label className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bid Amount</Label>
+                                                        <p className="text-xl font-bold text-purple-600">${bid.bidAmount.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
+                                                        <p className="font-medium">{new Date(bid.estimatedDelivery).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
+                                                        <p className="font-medium capitalize">{bid.status}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
-                                                    <p className="font-medium">{new Date(bid.estimatedDelivery).toLocaleDateString()}</p>
-                                                </div>
-                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
-                                                    <p className="font-medium capitalize">{bid.status}</p>
-                                                </div>
-                                            </div>
-                                            {bid.message && (
-                                                <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
-                                                    <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
-                                                    <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
-                                                </div>
+                                                {bid.message && (
+                                                    <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
+                                                        <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
+                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                            {bid.status === 'pending' && (
+                                                <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
+                                                    <Button
+                                                        className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
+                                                        onClick={() => handleAcceptBid(bid.id)}
+                                                    >
+                                                        <Check className="mr-2 h-4 w-4" />
+                                                        Accept Bid
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        className="flex-1 shadow-lg shadow-red-500/20"
+                                                        onClick={() => handleRejectBid(bid.id)}
+                                                    >
+                                                        <X className="mr-2 h-4 w-4" />
+                                                        Reject Bid
+                                                    </Button>
+                                                </CardFooter>
                                             )}
-                                        </CardContent>
-                                        {bid.status === 'pending' && (
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Live Bids Section - Always visible at the end */}
+                    {bids.filter(b => b.status === 'pending').length > 0 && (
+                        <div className="space-y-6 mt-8">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse" />
+                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Live Bids</h2>
+                                    <Badge variant="secondary" className="ml-2">{bids.filter(b => b.status === 'pending').length} active</Badge>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4">
+                                {bids.filter(b => b.status === 'pending').map((bid) => {
+                                    const order = orders.find(o => o.id === bid.orderId);
+                                    return (
+                                        <Card key={bid.id} className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900 overflow-hidden relative">
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500" />
+                                            <CardHeader>
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <CardTitle className="text-gray-900 dark:text-gray-100">
+                                                            {order?.item?.name || `Order #${bid.orderId.slice(0, 8)}`}
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            Bid from Vendor #{bid.sellerId?.slice(0, 6).toUpperCase() || bid.id.slice(0, 6).toUpperCase()} • {new Date(bid.createdAt).toLocaleDateString()}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                                                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">Live</Badge>
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3">
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                    <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
+                                                        <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider">Bid Amount</Label>
+                                                        <p className="text-xl font-bold text-purple-600">${bid.bidAmount.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
+                                                        <p className="font-medium">{new Date(bid.estimatedDelivery).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</Label>
+                                                        <p className="font-medium">{order?.quantity || 'N/A'} units</p>
+                                                    </div>
+                                                </div>
+                                                {bid.message && (
+                                                    <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
+                                                        <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
+                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
+                                                    </div>
+                                                )}
+                                            </CardContent>
                                             <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
                                                 <Button
                                                     className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
@@ -1080,12 +1593,12 @@ export default function BuyerDashboard() {
                                                     Reject Bid
                                                 </Button>
                                             </CardFooter>
-                                        )}
-                                    </Card>
-                                ))}
+                                        </Card>
+                                    );
+                                })}
                             </div>
-                        </TabsContent>
-                    </Tabs>
+                        </div>
+                    )}
 
                     {/* Place Order Dialog */}
                     <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
@@ -1208,11 +1721,19 @@ export default function BuyerDashboard() {
                                     className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                                     onClick={() => {
                                         setIsItemDetailsDialogOpen(false);
-                                        setIsOrderDialogOpen(true);
+                                        // Pre-fill bid form with selected item details
+                                        setBidForm({
+                                            ...bidForm,
+                                            productName: selectedItem?.name || '',
+                                            size: selectedItem?.size || '',
+                                            specification: selectedItem?.specifications?.['Variety/Grade'] || '',
+                                            quality: selectedItem?.specifications?.['Quality Grade'] || '',
+                                        });
+                                        setIsPlaceBidDialogOpen(true);
                                     }}
                                 >
                                     <ShoppingCart className="mr-2 h-4 w-4" />
-                                    Place Order
+                                    Place Bid Request
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -1227,7 +1748,7 @@ export default function BuyerDashboard() {
                                     Search by product name or HSN code to quickly find and add products
                                 </DialogDescription>
                             </DialogHeader>
-                            
+
                             {/* Search and Filter */}
                             <div className="flex flex-col sm:flex-row gap-4 mb-4">
                                 <div className="relative flex-1">
@@ -1255,36 +1776,36 @@ export default function BuyerDashboard() {
 
                             {/* Category Quick Filters */}
                             <div className="flex flex-wrap gap-2 mb-4">
-                                <Badge 
-                                    variant={selectedCategory === 'all' ? 'default' : 'outline'} 
+                                <Badge
+                                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
                                     className="cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
                                     onClick={() => setSelectedCategory('all')}
                                 >
                                     All ({ALL_PRODUCTS.length})
                                 </Badge>
-                                <Badge 
-                                    variant={selectedCategory === 'Spices' ? 'default' : 'outline'} 
+                                <Badge
+                                    variant={selectedCategory === 'Spices' ? 'default' : 'outline'}
                                     className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
                                     onClick={() => setSelectedCategory('Spices')}
                                 >
                                     🌶️ Spices ({PRODUCT_CATALOG.spices.length})
                                 </Badge>
-                                <Badge 
-                                    variant={selectedCategory === 'Vegetables' ? 'default' : 'outline'} 
+                                <Badge
+                                    variant={selectedCategory === 'Vegetables' ? 'default' : 'outline'}
                                     className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                                     onClick={() => setSelectedCategory('Vegetables')}
                                 >
                                     🥬 Vegetables ({PRODUCT_CATALOG.vegetables.length})
                                 </Badge>
-                                <Badge 
-                                    variant={selectedCategory === 'Pulses' ? 'default' : 'outline'} 
+                                <Badge
+                                    variant={selectedCategory === 'Pulses' ? 'default' : 'outline'}
                                     className="cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
                                     onClick={() => setSelectedCategory('Pulses')}
                                 >
                                     🫘 Pulses ({PRODUCT_CATALOG.pulses.length})
                                 </Badge>
-                                <Badge 
-                                    variant={selectedCategory === 'Dry Fruits & Nuts' ? 'default' : 'outline'} 
+                                <Badge
+                                    variant={selectedCategory === 'Dry Fruits & Nuts' ? 'default' : 'outline'}
                                     className="cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
                                     onClick={() => setSelectedCategory('Dry Fruits & Nuts')}
                                 >
@@ -1302,38 +1823,51 @@ export default function BuyerDashboard() {
                             <ScrollArea className="h-[400px] pr-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {filteredCatalogProducts.map((product, index) => (
-                                        <Card 
+                                        <Card
                                             key={`${product.name}-${index}`}
-                                            className="cursor-pointer hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200 group"
-                                            onClick={() => selectCatalogProduct(product)}
+                                            className="hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200 group"
                                         >
                                             <CardContent className="p-4">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <h4 className="font-semibold text-sm group-hover:text-purple-600 transition-colors line-clamp-2">
-                                                            {product.name}
-                                                        </h4>
-                                                        <div className="flex flex-wrap items-center gap-1 mt-2">
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                HSN: {product.hsn}
-                                                            </Badge>
-                                                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
-                                                                {product.variety}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                            {product.category}
-                                                        </p>
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-sm group-hover:text-purple-600 transition-colors line-clamp-2">
+                                                        {product.name}
+                                                    </h4>
+                                                    <div className="flex flex-wrap items-center gap-1 mt-2">
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            HSN: {product.hsn}
+                                                        </Badge>
+                                                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                                                            {product.variety}
+                                                        </Badge>
                                                     </div>
-                                                    <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                        <Plus className="h-4 w-4 text-purple-600" />
-                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {product.category}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-2 mt-3">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="flex-1 text-xs"
+                                                        onClick={() => selectCatalogProductForList(product)}
+                                                    >
+                                                        <List className="h-3 w-3 mr-1" />
+                                                        Add to List
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
+                                                        onClick={() => selectCatalogProductForBid(product)}
+                                                    >
+                                                        <Send className="h-3 w-3 mr-1" />
+                                                        Place Bid
+                                                    </Button>
                                                 </div>
                                             </CardContent>
                                         </Card>
                                     ))}
                                 </div>
-                                
+
                                 {filteredCatalogProducts.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-12 text-center">
                                         <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -1341,8 +1875,8 @@ export default function BuyerDashboard() {
                                         <p className="text-muted-foreground text-sm mt-1">
                                             Try a different search term or category
                                         </p>
-                                        <Button 
-                                            variant="link" 
+                                        <Button
+                                            variant="link"
                                             onClick={() => {
                                                 setCatalogSearchQuery('');
                                                 setSelectedCategory('all');
@@ -1358,15 +1892,15 @@ export default function BuyerDashboard() {
                                 <Button variant="outline" onClick={() => setIsSelectProductDialogOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                     variant="ghost"
                                     onClick={() => {
                                         setIsSelectProductDialogOpen(false);
-                                        setIsAddProductDialogOpen(true);
+                                        setIsPlaceBidDialogOpen(true);
                                     }}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Add Custom Product Instead
+                                    Enter Custom Product
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -1399,7 +1933,7 @@ export default function BuyerDashboard() {
                                     {productForm.name ? `Adding: ${productForm.name}` : 'Create a new product to sell in the marketplace'}
                                 </DialogDescription>
                             </DialogHeader>
-                            
+
                             {/* HSN Badge if selected from catalog */}
                             {productForm.specifications['HSN Code'] && (
                                 <div className="flex flex-wrap items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -1416,7 +1950,7 @@ export default function BuyerDashboard() {
                                     </span>
                                 </div>
                             )}
-                            
+
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -1498,7 +2032,7 @@ export default function BuyerDashboard() {
                                         />
                                     </div>
                                 </div>
-                                
+
                                 {/* Quality Grade Selection */}
                                 <div>
                                     <Label htmlFor="productQuality">Quality Grade *</Label>
@@ -1567,13 +2101,482 @@ export default function BuyerDashboard() {
                                 <Button variant="outline" onClick={() => setIsAddProductDialogOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button 
-                                    onClick={handleAddProduct} 
+                                <Button
+                                    onClick={handleAddProduct}
                                     className="bg-gradient-to-r from-purple-600 to-blue-600"
                                     disabled={addingProduct}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     {addingProduct ? "Adding..." : "Add Product"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Place Bid Request Dialog */}
+                    <Dialog open={isPlaceBidDialogOpen} onOpenChange={(open) => {
+                        setIsPlaceBidDialogOpen(open);
+                        if (!open) {
+                            setBidForm({
+                                productName: '',
+                                hsnCode: '',
+                                size: '',
+                                specification: '',
+                                quality: '',
+                                quantity: '',
+                                expectedDeliveryDate: '',
+                                pincode: '',
+                                city: '',
+                                state: '',
+                                shippingAddress: '',
+                                notes: '',
+                            });
+                            setSelectedCatalogProduct(null);
+                        }
+                    }}>
+                        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl">Place Bid Request</DialogTitle>
+                                <DialogDescription>
+                                    Create a bid request for sellers to submit their offers. Fill in the product details below.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="space-y-4">
+                                {/* Product Selection */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="bidProductName">Product Name *</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="bidProductName"
+                                            value={bidForm.productName}
+                                            onChange={(e) => setBidForm({ ...bidForm, productName: e.target.value })}
+                                            placeholder="Enter product name or select from catalog"
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setIsPlaceBidDialogOpen(false);
+                                                setIsSelectProductDialogOpen(true);
+                                            }}
+                                        >
+                                            <Search className="h-4 w-4 mr-2" />
+                                            Catalog
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* HSN Code and Size */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="bidHsnCode">HSN Code</Label>
+                                        <Input
+                                            id="bidHsnCode"
+                                            value={bidForm.hsnCode}
+                                            onChange={(e) => setBidForm({ ...bidForm, hsnCode: e.target.value })}
+                                            placeholder="e.g., 0909"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bidSize">Size / Unit *</Label>
+                                        <Select
+                                            value={bidForm.size}
+                                            onValueChange={(value) => setBidForm({ ...bidForm, size: value })}
+                                        >
+                                            <SelectTrigger id="bidSize">
+                                                <SelectValue placeholder="Select size/unit" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {SIZE_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Specification and Quality */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="bidSpecification">Specification / Variety</Label>
+                                        <Input
+                                            id="bidSpecification"
+                                            value={bidForm.specification}
+                                            onChange={(e) => setBidForm({ ...bidForm, specification: e.target.value })}
+                                            placeholder="e.g., Singapore Quality, Bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bidQuality">Quality Grade *</Label>
+                                        <Select
+                                            value={bidForm.quality}
+                                            onValueChange={(value) => setBidForm({ ...bidForm, quality: value })}
+                                        >
+                                            <SelectTrigger id="bidQuality">
+                                                <SelectValue placeholder="Select quality" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {QUALITY_GRADES.map((grade) => (
+                                                    <SelectItem key={grade.value} value={grade.value}>
+                                                        {grade.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Quantity and Expected Date */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="bidQuantity">Quantity *</Label>
+                                        <Input
+                                            id="bidQuantity"
+                                            type="number"
+                                            min="1"
+                                            value={bidForm.quantity}
+                                            onChange={(e) => setBidForm({ ...bidForm, quantity: e.target.value })}
+                                            placeholder="Enter quantity"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bidExpectedDate">Expected Delivery Date *</Label>
+                                        <Input
+                                            id="bidExpectedDate"
+                                            type="date"
+                                            value={bidForm.expectedDeliveryDate}
+                                            onChange={(e) => setBidForm({ ...bidForm, expectedDeliveryDate: e.target.value })}
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Location Details */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <Label htmlFor="bidPincode">Pincode *</Label>
+                                        <Input
+                                            id="bidPincode"
+                                            value={bidForm.pincode}
+                                            onChange={(e) => setBidForm({ ...bidForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                            placeholder="6-digit pincode"
+                                            maxLength={6}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bidCity">City *</Label>
+                                        <Input
+                                            id="bidCity"
+                                            value={bidForm.city}
+                                            onChange={(e) => setBidForm({ ...bidForm, city: e.target.value })}
+                                            placeholder="Enter city"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bidState">State *</Label>
+                                        <Select
+                                            value={bidForm.state}
+                                            onValueChange={(value) => setBidForm({ ...bidForm, state: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select state" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <ScrollArea className="h-[200px]">
+                                                    {INDIAN_STATES.map((state) => (
+                                                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                                                    ))}
+                                                </ScrollArea>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Shipping Address */}
+                                <div>
+                                    <Label htmlFor="bidShippingAddress">Complete Shipping Address *</Label>
+                                    <Textarea
+                                        id="bidShippingAddress"
+                                        value={bidForm.shippingAddress}
+                                        onChange={(e) => setBidForm({ ...bidForm, shippingAddress: e.target.value })}
+                                        placeholder="Enter street address, landmark, etc."
+                                        rows={2}
+                                    />
+                                </div>
+
+                                {/* Additional Notes */}
+                                <div>
+                                    <Label htmlFor="bidNotes">Additional Notes (Optional)</Label>
+                                    <Textarea
+                                        id="bidNotes"
+                                        value={bidForm.notes}
+                                        onChange={(e) => setBidForm({ ...bidForm, notes: e.target.value })}
+                                        placeholder="Any special requirements or notes for sellers..."
+                                        rows={2}
+                                    />
+                                </div>
+
+                                {/* Summary Card */}
+                                {bidForm.productName && bidForm.quantity && (
+                                    <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+                                        <CardContent className="p-4">
+                                            <h4 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">Bid Request Summary</h4>
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div>
+                                                    <span className="text-muted-foreground">Product:</span>
+                                                    <p className="font-medium">{bidForm.productName}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Quantity:</span>
+                                                    <p className="font-medium">{bidForm.quantity} {bidForm.size || 'units'}</p>
+                                                </div>
+                                                {bidForm.quality && (
+                                                    <div>
+                                                        <span className="text-muted-foreground">Quality:</span>
+                                                        <p className="font-medium">{QUALITY_GRADES.find(g => g.value === bidForm.quality)?.label}</p>
+                                                    </div>
+                                                )}
+                                                {bidForm.expectedDeliveryDate && (
+                                                    <div>
+                                                        <span className="text-muted-foreground">Expected By:</span>
+                                                        <p className="font-medium">{new Date(bidForm.expectedDeliveryDate).toLocaleDateString()}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <Button variant="outline" onClick={() => setIsPlaceBidDialogOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handlePlaceBidRequest}
+                                    disabled={placingBidRequest || !bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.pincode || !bidForm.city || !bidForm.state || bidForm.pincode.length !== 6}
+                                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                                >
+                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    {placingBidRequest ? "Placing Request..." : "Place Bid Request"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Add to List Dialog */}
+                    <Dialog open={isAddToListDialogOpen} onOpenChange={(open) => {
+                        setIsAddToListDialogOpen(open);
+                        if (!open) {
+                            setAddToListForm({
+                                productName: '',
+                                hsnCode: '',
+                                size: '',
+                                specification: '',
+                                quality: '',
+                                quantity: '',
+                                expectedDeliveryDate: '',
+                                pincode: '',
+                                city: '',
+                                state: '',
+                                shippingAddress: '',
+                                notes: '',
+                            });
+                            setSelectedProductForList(null);
+                        }
+                    }}>
+                        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl">Add New Item</DialogTitle>
+                                <DialogDescription>
+                                    Add a new item to the catalog. It will appear in the items list below the search bar.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="space-y-4">
+                                {/* Product Selection */}
+                                <div>
+                                    <Label>Product *</Label>
+                                    <div className="flex gap-2 mt-1">
+                                        <Input
+                                            value={addToListForm.productName}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, productName: e.target.value })}
+                                            placeholder="Enter product name or browse catalog"
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsSelectProductDialogOpen(true)}
+                                        >
+                                            <Search className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* HSN Code and Specification */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label htmlFor="listHsnCode">HSN Code</Label>
+                                        <Input
+                                            id="listHsnCode"
+                                            value={addToListForm.hsnCode}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, hsnCode: e.target.value })}
+                                            placeholder="e.g., 0909"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="listSpecification">Specification/Variety</Label>
+                                        <Input
+                                            id="listSpecification"
+                                            value={addToListForm.specification}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, specification: e.target.value })}
+                                            placeholder="e.g., Singapore Quality"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Size, Quality, Quantity */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <Label htmlFor="listSize">Size/Package</Label>
+                                        <Select
+                                            value={addToListForm.size}
+                                            onValueChange={(value) => setAddToListForm({ ...addToListForm, size: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select size" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {SIZE_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="listQuality">Quality Grade</Label>
+                                        <Select
+                                            value={addToListForm.quality}
+                                            onValueChange={(value) => setAddToListForm({ ...addToListForm, quality: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select quality" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <ScrollArea className="h-[200px]">
+                                                    {QUALITY_GRADES.map((grade) => (
+                                                        <SelectItem key={grade.value} value={grade.value}>{grade.label}</SelectItem>
+                                                    ))}
+                                                </ScrollArea>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="listQuantity">Quantity *</Label>
+                                        <Input
+                                            id="listQuantity"
+                                            type="number"
+                                            value={addToListForm.quantity}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, quantity: e.target.value })}
+                                            placeholder="e.g., 100"
+                                            min="1"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Expected Delivery Date */}
+                                <div>
+                                    <Label htmlFor="listExpectedDate">Expected Delivery Date</Label>
+                                    <Input
+                                        id="listExpectedDate"
+                                        type="date"
+                                        value={addToListForm.expectedDeliveryDate}
+                                        onChange={(e) => setAddToListForm({ ...addToListForm, expectedDeliveryDate: e.target.value })}
+                                        min={new Date().toISOString().split('T')[0]}
+                                    />
+                                </div>
+
+                                {/* Location Details */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <Label htmlFor="listPincode">Pincode</Label>
+                                        <Input
+                                            id="listPincode"
+                                            value={addToListForm.pincode}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                            placeholder="6-digit"
+                                            maxLength={6}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="listCity">City</Label>
+                                        <Input
+                                            id="listCity"
+                                            value={addToListForm.city}
+                                            onChange={(e) => setAddToListForm({ ...addToListForm, city: e.target.value })}
+                                            placeholder="Enter city"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="listState">State</Label>
+                                        <Select
+                                            value={addToListForm.state}
+                                            onValueChange={(value) => setAddToListForm({ ...addToListForm, state: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select state" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <ScrollArea className="h-[200px]">
+                                                    {INDIAN_STATES.map((state) => (
+                                                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                                                    ))}
+                                                </ScrollArea>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Shipping Address */}
+                                <div>
+                                    <Label htmlFor="listShippingAddress">Shipping Address</Label>
+                                    <Textarea
+                                        id="listShippingAddress"
+                                        value={addToListForm.shippingAddress}
+                                        onChange={(e) => setAddToListForm({ ...addToListForm, shippingAddress: e.target.value })}
+                                        placeholder="Enter street address, landmark, etc."
+                                        rows={2}
+                                    />
+                                </div>
+
+                                {/* Notes */}
+                                <div>
+                                    <Label htmlFor="listNotes">Notes (Optional)</Label>
+                                    <Textarea
+                                        id="listNotes"
+                                        value={addToListForm.notes}
+                                        onChange={(e) => setAddToListForm({ ...addToListForm, notes: e.target.value })}
+                                        placeholder="Any special requirements..."
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <Button variant="outline" onClick={() => setIsAddToListDialogOpen(false)} disabled={addingToList}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleAddToList}
+                                    disabled={addingToList || !addToListForm.productName || !addToListForm.quantity}
+                                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                                >
+                                    <List className="mr-2 h-4 w-4" />
+                                    {addingToList ? "Adding..." : "Add Item"}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

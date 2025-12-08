@@ -4,12 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, DollarSign, TrendingUp, Users, Send, Calendar, ShoppingCart, RefreshCw, BarChart3, PieChart, Activity, ArrowUp, ArrowDown, Minus, Trophy, AlertTriangle } from 'lucide-react';
+import { Package, DollarSign, TrendingUp, Users, Send, Calendar, ShoppingCart, RefreshCw, BarChart3, PieChart, Activity, ArrowUp, ArrowDown, Minus, Trophy, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Order, Bid } from '@/lib/types';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { BackgroundBeams } from '@/components/ui/aceternity/background-beams';
@@ -28,6 +27,8 @@ export default function SellerDashboard() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [bids, setBids] = useState<Bid[]>([]);
     const [allOrderBids, setAllOrderBids] = useState<Record<string, Bid[]>>({});
+    const [showAllOrders, setShowAllOrders] = useState(false);
+    const [showAllBids, setShowAllBids] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submittingBid, setSubmittingBid] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -493,7 +494,7 @@ export default function SellerDashboard() {
         <DashboardLayout role="seller">
             <Toaster />
             <div className="relative min-h-[calc(100vh-4rem)]">
-                <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-0 dark:opacity-50">
                     <BackgroundBeams />
                 </div>
 
@@ -503,7 +504,7 @@ export default function SellerDashboard() {
                             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                                 Welcome back, {user.name}
                             </h1>
-                            <p className="text-muted-foreground mt-1">View available orders and place competitive bids</p>
+                            <p className="text-gray-600 dark:text-gray-400 mt-1">View available orders and place competitive bids</p>
                         </div>
                         <Button
                             variant="outline"
@@ -517,321 +518,79 @@ export default function SellerDashboard() {
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Available Orders</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Orders</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalOrders}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Orders available for bidding</p>
+                                <p className="text-xs text-gray-500 mt-1">Orders available for bidding</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Pending Bids</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Bids</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <TrendingUp className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pendingBids}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Awaiting response</p>
+                                <p className="text-xs text-gray-500 mt-1">Awaiting response</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Accepted Bids</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Accepted Bids</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Users className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.acceptedBids}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Confirmed orders</p>
+                                <p className="text-xs text-gray-500 mt-1">Confirmed orders</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-300 group">
+                        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Potential Revenue</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Potential Revenue</CardTitle>
                                 <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">${stats.potentialRevenue.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground mt-1">From accepted bids</p>
+                                <p className="text-xs text-gray-500 mt-1">From accepted bids</p>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <Tabs defaultValue="analytics" className="space-y-6">
-                        <TabsList className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm p-1 border border-gray-200 dark:border-gray-800 rounded-xl">
-                            <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Analytics
-                            </TabsTrigger>
-                            <TabsTrigger value="orders" className="rounded-lg data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Available Orders</TabsTrigger>
-                            <TabsTrigger value="mybids" className="rounded-lg data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">My Bids</TabsTrigger>
-                        </TabsList>
-
-                        {/* Analytics Tab */}
-                        <TabsContent value="analytics" className="space-y-6">
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {/* Bid Status Pie Chart */}
-                                <Card className="border-none shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <PieChart className="h-5 w-5 text-emerald-600" />
-                                            Bid Status Distribution
-                                        </CardTitle>
-                                        <CardDescription>Overview of your bid outcomes</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {bidStatusData.length > 0 ? (
-                                            <ChartContainer config={bidStatusChartConfig} className="h-[220px] w-full">
-                                                <RechartsPieChart>
-                                                    <Pie
-                                                        data={bidStatusData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        innerRadius={50}
-                                                        outerRadius={80}
-                                                        paddingAngle={2}
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                        labelLine={false}
-                                                    >
-                                                        {bidStatusData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                        ))}
-                                                    </Pie>
-                                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                                </RechartsPieChart>
-                                            </ChartContainer>
-                                        ) : (
-                                            <div className="h-[220px] flex items-center justify-center text-muted-foreground">
-                                                <div className="text-center">
-                                                    <PieChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                                    <p>No bid data available</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-center gap-4 mt-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                                                <span className="text-xs text-muted-foreground">Pending ({stats.pendingBids})</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-3 w-3 rounded-full bg-green-500" />
-                                                <span className="text-xs text-muted-foreground">Accepted ({stats.acceptedBids})</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-3 w-3 rounded-full bg-red-500" />
-                                                <span className="text-xs text-muted-foreground">Rejected ({stats.rejectedBids})</span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Success Rate Card */}
-                                <Card className="border-none shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <TrendingUp className="h-5 w-5 text-emerald-600" />
-                                            Performance Metrics
-                                        </CardTitle>
-                                        <CardDescription>Your overall success rate</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        {/* Success Rate Circular */}
-                                        <div className="flex flex-col items-center">
-                                            <div className="relative h-32 w-32">
-                                                <svg className="h-32 w-32 -rotate-90" viewBox="0 0 100 100">
-                                                    <circle
-                                                        cx="50"
-                                                        cy="50"
-                                                        r="40"
-                                                        stroke="currentColor"
-                                                        strokeWidth="8"
-                                                        fill="none"
-                                                        className="text-gray-200 dark:text-gray-700"
-                                                    />
-                                                    <circle
-                                                        cx="50"
-                                                        cy="50"
-                                                        r="40"
-                                                        stroke="currentColor"
-                                                        strokeWidth="8"
-                                                        fill="none"
-                                                        strokeDasharray={`${successRate * 2.51} 251`}
-                                                        className="text-emerald-500"
-                                                        strokeLinecap="round"
-                                                    />
-                                                </svg>
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{successRate}%</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground mt-2">Bid Success Rate</p>
-                                        </div>
-
-                                        {/* Quick Stats */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                                                <p className="text-2xl font-bold text-emerald-600">{bids.length}</p>
-                                                <p className="text-xs text-muted-foreground">Total Bids</p>
-                                            </div>
-                                            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                                <p className="text-2xl font-bold text-blue-600">${stats.totalBidValue.toFixed(0)}</p>
-                                                <p className="text-xs text-muted-foreground">Total Value</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Revenue Summary */}
-                                <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-lg text-white">
-                                            <DollarSign className="h-5 w-5" />
-                                            Revenue Summary
-                                        </CardTitle>
-                                        <CardDescription className="text-emerald-100">Your earnings overview</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                                                <span className="text-emerald-100">Total Potential</span>
-                                                <span className="text-xl font-bold">${stats.totalBidValue.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                                                <span className="text-emerald-100">Confirmed Revenue</span>
-                                                <span className="text-xl font-bold">${stats.potentialRevenue.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                                                <span className="text-emerald-100">Avg. Bid Value</span>
-                                                <span className="text-xl font-bold">
-                                                    ${bids.length > 0 ? (stats.totalBidValue / bids.length).toFixed(2) : '0.00'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                    {/* Available Orders Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-5 w-5 text-emerald-600" />
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Available Orders</h2>
+                                <Badge variant="secondary" className="ml-2">{orders.length} orders</Badge>
                             </div>
+                        </div>
 
-                            {/* Full Width Charts */}
-                            <div className="grid gap-6 lg:grid-cols-2">
-                                {/* Monthly Revenue Area Chart */}
-                                <Card className="border-none shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <Activity className="h-5 w-5 text-emerald-600" />
-                                            Monthly Revenue Trends
-                                        </CardTitle>
-                                        <CardDescription>Your earnings from accepted bids over time</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ChartContainer config={revenueChartConfig} className="h-[250px] w-full">
-                                            <AreaChart data={monthlyRevenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                                <defs>
-                                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                                                    </linearGradient>
-                                                    <linearGradient id="colorBids" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                                <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                                                <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" tickFormatter={(value) => `$${value}`} />
-                                                <ChartTooltip content={<ChartTooltipContent />} />
-                                                <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRevenue)" name="Accepted Revenue" />
-                                                <Area type="monotone" dataKey="bids" stroke="#3b82f6" fillOpacity={1} fill="url(#colorBids)" name="Total Bid Value" />
-                                            </AreaChart>
-                                        </ChartContainer>
-                                        <div className="flex justify-center gap-6 mt-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                                                <span className="text-xs text-muted-foreground">Accepted Revenue</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                                                <span className="text-xs text-muted-foreground">Total Bid Value</span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
+                        <div className="grid gap-6">
+                            {orders.length === 0 ? (
+                                <Card className="p-12 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <p className="text-muted-foreground">No orders available at the moment.</p>
                                 </Card>
-
-                                {/* Recent Activity Bar Chart */}
-                                <Card className="border-none shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <BarChart3 className="h-5 w-5 text-emerald-600" />
-                                            Last 7 Days Activity
-                                        </CardTitle>
-                                        <CardDescription>Your recent bidding activity</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ChartContainer config={{ bids: { label: 'Bids', color: '#10b981' } }} className="h-[250px] w-full">
-                                            <BarChart data={recentBidActivity} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                                <XAxis dataKey="day" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                                                <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                                                <ChartTooltip 
-                                                    content={({ active, payload }) => {
-                                                        if (active && payload && payload.length) {
-                                                            return (
-                                                                <div className="bg-background border rounded-lg p-2 shadow-lg">
-                                                                    <p className="text-sm font-medium">{payload[0].payload.day}</p>
-                                                                    <p className="text-xs text-muted-foreground">Bids: {payload[0].payload.bids}</p>
-                                                                    <p className="text-xs text-emerald-600">Value: ${payload[0].payload.value.toFixed(2)}</p>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    }}
-                                                />
-                                                <Bar dataKey="bids" fill="#10b981" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
-                                        </ChartContainer>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="orders" className="space-y-6">
-                            <Card className="border-none shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white overflow-hidden relative">
-                                <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                                <CardHeader className="relative z-10">
-                                    <CardTitle className="flex items-center gap-2">
-                                        <div className="p-2 bg-white/20 rounded-full">
-                                            <TrendingUp className="h-5 w-5" />
-                                        </div>
-                                        Bidding Tips
-                                    </CardTitle>
-                                    <CardDescription className="text-white/90 text-base">
-                                        Review orders carefully and place competitive bids. Include delivery estimates and personalized messages to increase your chances.
-                                    </CardDescription>
-                                </CardHeader>
-                            </Card>
-
-                            <div className="grid gap-6">
-                                {orders.length === 0 ? (
-                                    <Card className="p-12 text-center">
-                                        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                        <p className="text-muted-foreground">No orders available at the moment.</p>
-                                    </Card>
-                                ) : (
-                                    orders.map((order) => (
-                                        <Card key={order.id} className="border-none shadow-md hover:shadow-xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm group">
+                            ) : (
+                                <>
+                                    {(showAllOrders ? orders : orders.slice(0, 5)).map((order) => (
+                                        <Card key={order.id} className="shadow-md hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                             <CardHeader>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-4">
@@ -885,20 +644,6 @@ export default function SellerDashboard() {
                                                         </div>
                                                     )}
                                                 </div>
-
-                                                {order.item?.specifications && (
-                                                    <div>
-                                                        <Label className="font-semibold mb-3 block text-sm uppercase tracking-wider text-gray-500">Item Specifications</Label>
-                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                            {Object.entries(order.item.specifications).slice(0, 6).map(([key, value]) => (
-                                                                <div key={key} className="bg-white dark:bg-gray-950 p-3 rounded border border-gray-100 dark:border-gray-800 shadow-sm">
-                                                                    <p className="text-xs text-muted-foreground mb-1">{key}</p>
-                                                                    <p className="text-sm font-medium">{value}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </CardContent>
                                             <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
                                                 <Button
@@ -910,66 +655,375 @@ export default function SellerDashboard() {
                                                 </Button>
                                             </CardFooter>
                                         </Card>
-                                    ))
-                                )}
-                            </div>
-                        </TabsContent>
+                                    ))}
+                                    {orders.length > 5 && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                            onClick={() => setShowAllOrders(!showAllOrders)}
+                                        >
+                                            {showAllOrders ? (
+                                                <>
+                                                    <ChevronUp className="mr-2 h-4 w-4" />
+                                                    Show Less
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronDown className="mr-2 h-4 w-4" />
+                                                    Load More ({orders.length - 5} more)
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                        <TabsContent value="mybids" className="space-y-6">
-                            <div className="grid gap-6">
-                                {bids.length === 0 ? (
-                                    <Card className="p-12 text-center">
-                                        <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                        <p className="text-muted-foreground">You haven't placed any bids yet.</p>
-                                    </Card>
-                                ) : (
-                                    bids.map((bid) => (
-                                        <Card key={bid.id} className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                                            <CardHeader>
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <CardTitle>Bid for Order #{bid.orderId.slice(0, 8)}</CardTitle>
-                                                        <CardDescription>
-                                                            Placed on {new Date(bid.createdAt).toLocaleDateString()}
-                                                        </CardDescription>
-                                                    </div>
-                                                    <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3">
-                                                {/* Bid Comparison Indicator */}
-                                                <BidComparisonIndicator orderId={bid.orderId} />
-                                                
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                    <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
-                                                        <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Your Bid Amount</Label>
-                                                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${bid.bidAmount.toFixed(2)}</p>
-                                                    </div>
-                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
-                                                        <p className="font-medium flex items-center gap-1">
-                                                            <Calendar className="h-4 w-4" />
-                                                            {new Date(bid.estimatedDelivery).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
-                                                        <p className="font-medium capitalize">{bid.status}</p>
-                                                    </div>
-                                                </div>
-                                                {bid.message && (
-                                                    <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Your Message</Label>
-                                                        <p className="font-medium mt-1">"{bid.message}"</p>
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                )}
+                    {/* My Bids Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5 text-emerald-600" />
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">My Bids</h2>
+                                <Badge variant="secondary" className="ml-2">{bids.length} bids</Badge>
                             </div>
-                        </TabsContent>
-                    </Tabs>
+                        </div>
+
+                        <div className="grid gap-6">
+                            {bids.length === 0 ? (
+                                <Card className="p-12 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <p className="text-muted-foreground">You haven't placed any bids yet.</p>
+                                </Card>
+                            ) : (
+                                <>
+                                    {(showAllBids ? bids : bids.slice(0, 5)).map((bid) => {
+                                        const order = orders.find(o => o.id === bid.orderId);
+                                        return (
+                                            <Card key={bid.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                                <CardHeader>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                                                <ShoppingCart className="h-6 w-6 text-emerald-600" />
+                                                            </div>
+                                                            <div>
+                                                                <CardTitle className="flex items-center gap-2">
+                                                                    {order?.item?.name || 'Unknown Item'}
+                                                                    {order?.item?.category && (
+                                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">{order.item.category}</Badge>
+                                                                    )}
+                                                                </CardTitle>
+                                                                <CardDescription>
+                                                                    Order #{bid.orderId.slice(0, 8)} • Placed on {new Date(bid.createdAt).toLocaleDateString()}
+                                                                </CardDescription>
+                                                            </div>
+                                                        </div>
+                                                        <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
+                                                    </div>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                    <BidComparisonIndicator orderId={bid.orderId} />
+                                                    
+                                                    {/* Product Info */}
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</Label>
+                                                            <p className="text-lg font-bold">{order?.quantity || 'N/A'} units</p>
+                                                        </div>
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Size</Label>
+                                                            <p className="text-lg font-medium">{order?.item?.size || 'N/A'}</p>
+                                                        </div>
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quality/Condition</Label>
+                                                            <p className="text-lg font-medium capitalize">{order?.item?.condition || 'N/A'}</p>
+                                                        </div>
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Order Budget</Label>
+                                                            <p className="text-lg font-medium text-gray-600">${(order?.totalPrice || 0).toFixed(2)}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Bid Info */}
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
+                                                            <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Your Bid Amount</Label>
+                                                            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${bid.bidAmount.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
+                                                            <p className="font-medium flex items-center gap-1">
+                                                                <Calendar className="h-4 w-4" />
+                                                                {new Date(bid.estimatedDelivery).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Bid Status</Label>
+                                                            <p className="font-medium capitalize">{bid.status}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Shipping Address */}
+                                                    {order?.shippingAddress && (
+                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                                            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Shipping Address</Label>
+                                                            <p className="font-medium mt-1">{order.shippingAddress}</p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Customer Notes */}
+                                                    {order?.notes && (
+                                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                                                            <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Customer Notes</Label>
+                                                            <p className="font-medium mt-1 italic">"{order.notes}"</p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Your Message */}
+                                                    {bid.message && (
+                                                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
+                                                            <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Your Message</Label>
+                                                            <p className="font-medium mt-1">"{bid.message}"</p>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
+                                    {bids.length > 5 && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                            onClick={() => setShowAllBids(!showAllBids)}
+                                        >
+                                            {showAllBids ? (
+                                                <>
+                                                    <ChevronUp className="mr-2 h-4 w-4" />
+                                                    Show Less
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronDown className="mr-2 h-4 w-4" />
+                                                    Load More ({bids.length - 5} more)
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Analytics Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-emerald-600" />
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Analytics Overview</h2>
+                        </div>
+                        
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {/* Bid Status Pie Chart */}
+                            <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-gray-100">
+                                        <PieChart className="h-5 w-5 text-emerald-600" />
+                                        Bid Status Distribution
+                                    </CardTitle>
+                                    <CardDescription>Overview of your bid outcomes</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {bidStatusData.length > 0 ? (
+                                        <ChartContainer config={bidStatusChartConfig} className="h-[220px] w-full">
+                                            <RechartsPieChart>
+                                                <Pie
+                                                    data={bidStatusData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={50}
+                                                    outerRadius={80}
+                                                    paddingAngle={2}
+                                                    dataKey="value"
+                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    labelLine={false}
+                                                >
+                                                    {bidStatusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <ChartTooltip content={<ChartTooltipContent />} />
+                                            </RechartsPieChart>
+                                        </ChartContainer>
+                                    ) : (
+                                        <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+                                            <div className="text-center">
+                                                <PieChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                                <p>No bid data available</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                                            <span className="text-xs text-muted-foreground">Pending ({stats.pendingBids})</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-3 w-3 rounded-full bg-green-500" />
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Accepted ({stats.acceptedBids})</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-3 w-3 rounded-full bg-red-500" />
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Rejected ({stats.rejectedBids})</span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Success Rate Card */}
+                            <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-gray-100">
+                                        <TrendingUp className="h-5 w-5 text-emerald-600" />
+                                        Performance Metrics
+                                    </CardTitle>
+                                    <CardDescription>Your overall success rate</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="flex flex-col items-center">
+                                        <div className="relative h-32 w-32">
+                                            <svg className="h-32 w-32 -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-gray-700" />
+                                                <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" strokeDasharray={`${successRate * 2.51} 251`} className="text-emerald-500" strokeLinecap="round" />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{successRate}%</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mt-2">Bid Success Rate</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                            <p className="text-2xl font-bold text-emerald-600">{bids.length}</p>
+                                            <p className="text-xs text-muted-foreground">Total Bids</p>
+                                        </div>
+                                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <p className="text-2xl font-bold text-blue-600">${stats.totalBidValue.toFixed(0)}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Revenue Summary */}
+                            <Card className="border border-emerald-200 dark:border-emerald-800 shadow-sm bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg text-white">
+                                        <DollarSign className="h-5 w-5" />
+                                        Revenue Summary
+                                    </CardTitle>
+                                    <CardDescription className="text-emerald-100">Your earnings overview</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center p-3 bg-white/20 rounded-lg">
+                                            <span className="text-emerald-100">Total Potential</span>
+                                            <span className="text-xl font-bold">${stats.totalBidValue.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/20 rounded-lg">
+                                            <span className="text-emerald-100">Confirmed Revenue</span>
+                                            <span className="text-xl font-bold">${stats.potentialRevenue.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/20 rounded-lg">
+                                            <span className="text-emerald-100">Avg. Bid Value</span>
+                                            <span className="text-xl font-bold">
+                                                ${bids.length > 0 ? (stats.totalBidValue / bids.length).toFixed(2) : '0.00'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Full Width Charts */}
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                        <Activity className="h-5 w-5 text-emerald-600" />
+                                        Monthly Revenue Trends
+                                    </CardTitle>
+                                    <CardDescription>Your earnings from accepted bids over time</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ChartContainer config={revenueChartConfig} className="h-[250px] w-full">
+                                        <AreaChart data={monthlyRevenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                                                </linearGradient>
+                                                <linearGradient id="colorBids" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                                            <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" tickFormatter={(value) => `$${value}`} />
+                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                            <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRevenue)" name="Accepted Revenue" />
+                                            <Area type="monotone" dataKey="bids" stroke="#3b82f6" fillOpacity={1} fill="url(#colorBids)" name="Total Bid Value" />
+                                        </AreaChart>
+                                    </ChartContainer>
+                                    <div className="flex justify-center gap-6 mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                                            <span className="text-xs text-muted-foreground">Accepted Revenue</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-3 w-3 rounded-full bg-blue-500" />
+                                            <span className="text-xs text-muted-foreground">Total Bid Value</span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                        <BarChart3 className="h-5 w-5 text-emerald-600" />
+                                        Last 7 Days Activity
+                                    </CardTitle>
+                                    <CardDescription>Your recent bidding activity</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ChartContainer config={{ bids: { label: 'Bids', color: '#10b981' } }} className="h-[250px] w-full">
+                                        <BarChart data={recentBidActivity} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis dataKey="day" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                                            <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                                            <ChartTooltip 
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        return (
+                                                            <div className="bg-background border rounded-lg p-2 shadow-lg">
+                                                                <p className="text-sm font-medium">{payload[0].payload.day}</p>
+                                                                <p className="text-xs text-muted-foreground">Bids: {payload[0].payload.bids}</p>
+                                                                <p className="text-xs text-emerald-600">Value: ${payload[0].payload.value.toFixed(2)}</p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            <Bar dataKey="bids" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ChartContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
 
                     <Dialog open={isBidDialogOpen} onOpenChange={setIsBidDialogOpen}>
                         <DialogContent className="sm:max-w-[500px]">
