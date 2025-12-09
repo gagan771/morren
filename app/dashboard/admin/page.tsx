@@ -438,7 +438,7 @@ export default function AdminDashboard() {
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>Delete Item</AlertDialogTitle>
                                                                 <AlertDialogDescription>
-                                                                    Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                                                                    Are you sure you want to delete &quot;{item.name}&quot;? This action cannot be undone.
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                                             {bid.message && (
                                                 <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
                                                     <Label className="text-xs text-muted-foreground uppercase tracking-wider">Message</Label>
-                                                    <p className="font-medium mt-1">"{bid.message}"</p>
+                                                    <p className="font-medium mt-1">&quot;{bid.message}&quot;</p>
                                                 </div>
                                             )}
                                         </CardContent>
