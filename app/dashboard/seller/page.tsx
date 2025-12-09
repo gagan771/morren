@@ -289,7 +289,7 @@ export default function SellerDashboard() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-medium">
                             <Trophy className="h-4 w-4" />
-                            <span>🎯 You're the only bidder so far!</span>
+                            <span>🎯 You&apos;re the only bidder so far!</span>
                         </div>
                         <Badge variant="outline" className="text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                             Leading
@@ -640,7 +640,7 @@ export default function SellerDashboard() {
                                                     {order.notes && (
                                                         <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                                                             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Customer Notes</Label>
-                                                            <p className="font-medium italic text-gray-600 dark:text-gray-400">"{order.notes}"</p>
+                                                            <p className="font-medium italic text-gray-600 dark:text-gray-400">&quot;{order.notes}&quot;</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -694,7 +694,7 @@ export default function SellerDashboard() {
                             {bids.length === 0 ? (
                                 <Card className="p-12 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                     <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                    <p className="text-muted-foreground">You haven't placed any bids yet.</p>
+                                    <p className="text-muted-foreground">You haven&apos;t placed any bids yet.</p>
                                 </Card>
                             ) : (
                                 <>
@@ -777,7 +777,7 @@ export default function SellerDashboard() {
                                                     {order?.notes && (
                                                         <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
                                                             <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Customer Notes</Label>
-                                                            <p className="font-medium mt-1 italic">"{order.notes}"</p>
+                                                            <p className="font-medium mt-1 italic">&quot;{order.notes}&quot;</p>
                                                         </div>
                                                     )}
 
@@ -785,7 +785,7 @@ export default function SellerDashboard() {
                                                     {bid.message && (
                                                         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
                                                             <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Your Message</Label>
-                                                            <p className="font-medium mt-1">"{bid.message}"</p>
+                                                            <p className="font-medium mt-1">&quot;{bid.message}&quot;</p>
                                                         </div>
                                                     )}
                                                 </CardContent>

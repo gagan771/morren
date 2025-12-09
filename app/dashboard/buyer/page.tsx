@@ -1147,7 +1147,7 @@ export default function BuyerDashboard() {
                             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                                 Welcome back, {user.name}
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-400 mt-1">Here's what's happening with your orders today.</p>
+                            <p className="text-gray-600 dark:text-gray-400 mt-1">Here&apos;s what&apos;s happening with your orders today.</p>
                         </div>
                         <div className="flex gap-3">
                             <Button
@@ -1491,7 +1491,7 @@ export default function BuyerDashboard() {
                                                 {bid.message && (
                                                     <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
                                                         <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
-                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
+                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">&quot;{bid.message}&quot;</p>
                                                     </div>
                                                 )}
                                             </CardContent>
@@ -1572,7 +1572,7 @@ export default function BuyerDashboard() {
                                                 {bid.message && (
                                                     <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
                                                         <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
-                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
+                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">&quot;{bid.message}&quot;</p>
                                                     </div>
                                                 )}
                                             </CardContent>

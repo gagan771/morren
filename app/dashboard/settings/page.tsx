@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { getBuyerProfile, updateBuyerProfile, type BuyerProfile } from "@/lib/supabase-api"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
@@ -23,21 +23,7 @@ export default function SettingsPage() {
   })
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth?role=buyer')
-      return
-    }
-    if (user && user.role !== 'buyer') {
-      router.push(`/dashboard/${user.role}`)
-      return
-    }
-    if (user) {
-      fetchProfile()
-    }
-  }, [user, authLoading, router])
-
-  const fetchProfile = async () => {
+  const fetchProfile = React.useCallback(async () => {
     if (!user) return
     try {
       const profileData = await getBuyerProfile(user.id)
@@ -62,7 +48,22 @@ export default function SettingsPage() {
         })
       }
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?role=buyer')
+      return
+    }
+    if (user && user.role !== 'buyer') {
+      router.push(`/dashboard/${user.role}`)
+      return
+    }
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchProfile()
+    }
+  }, [user, authLoading, router, fetchProfile])
 
   const handleSave = async () => {
     if (!user) return

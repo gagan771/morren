@@ -117,7 +117,7 @@ function AuthForm() {
             {isSellerRole && !isSignUp && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <p className="text-sm text-blue-600 dark:text-blue-400">
-                        Seller accounts are created by administrators only. If you don't have an account, please contact your admin.
+                        Seller accounts are created by administrators only. If you don&apos;t have an account, please contact your admin.
                     </p>
                 </div>
             )}
