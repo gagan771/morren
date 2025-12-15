@@ -452,6 +452,7 @@ export default function BuyerDashboard() {
         state: '',
         shippingAddress: '',
         notes: '',
+        bidRunningTime: '', // in days
     });
     const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<CatalogProduct | null>(null);
 
@@ -472,6 +473,49 @@ export default function BuyerDashboard() {
         notes: '',
     });
     const [selectedProductForList, setSelectedProductForList] = useState<CatalogProduct | null>(null);
+
+    // "My Bids" pagination
+    const [myBidsVisibleCount, setMyBidsVisibleCount] = useState(10);
+
+    const myBidOrders = useMemo(() => {
+        // Treat orders with totalPrice === 0 or notes mentioning "bid request" as bid requests created by the buyer
+        return orders.filter((order) => {
+            const isBidRequestPrice = !order.totalPrice || order.totalPrice === 0;
+            const notesLower = order.notes?.toLowerCase() || '';
+            const isBidRequestNotes = notesLower.includes('bid request');
+            return isBidRequestPrice || isBidRequestNotes;
+        });
+    }, [orders]);
+
+    const getBidTimeLeftLabel = (order: Order | undefined) => {
+        if (!order) return 'N/A';
+        const specs = order.item?.specifications || {};
+        const runningDaysRaw = (specs as any)['Bid Running Time (days)'];
+        const runningDays = runningDaysRaw ? parseInt(String(runningDaysRaw)) : NaN;
+        if (!runningDays || isNaN(runningDays) || runningDays <= 0) return 'N/A';
+
+        const created = new Date(order.createdAt).getTime();
+        const deadline = created + runningDays * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const diffMs = deadline - now;
+        if (diffMs <= 0) return 'Expired';
+
+        const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+        const daysLeft = Math.floor(diffHoursTotal / 24);
+        const hoursLeft = diffHoursTotal % 24;
+
+        if (daysLeft > 0) {
+            return `${daysLeft}d ${hoursLeft}h left`;
+        }
+        // Less than 24 hours left
+        const diffMinutesTotal = Math.floor(diffMs / (1000 * 60));
+        const hoursOnly = Math.floor(diffMinutesTotal / 60);
+        const minutesLeft = diffMinutesTotal % 60;
+        if (hoursOnly > 0) {
+            return `${hoursOnly}h ${minutesLeft}m left`;
+        }
+        return `${minutesLeft}m left`;
+    };
 
     // Filter catalog products based on search query and category
     const filteredCatalogProducts = useMemo(() => {
@@ -795,10 +839,10 @@ export default function BuyerDashboard() {
         }
 
         // Validation
-        if (!bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.pincode || !bidForm.city || !bidForm.state) {
+        if (!bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.pincode || !bidForm.city || !bidForm.state || !bidForm.bidRunningTime) {
             toast({
                 title: "Validation Error",
-                description: "Please fill in all required fields (Product, Quantity, Pincode, City, State, Shipping Address, Expected Delivery Date).",
+                description: "Please fill in all required fields (Product, Quantity, Pincode, City, State, Shipping Address, Expected Delivery Date, Bid Running Time).",
                 variant: "destructive",
             });
             return;
@@ -824,6 +868,17 @@ export default function BuyerDashboard() {
             return;
         }
 
+        // Validate bid running time (in days)
+        const bidRunningTimeDays = parseInt(bidForm.bidRunningTime);
+        if (isNaN(bidRunningTimeDays) || bidRunningTimeDays <= 0) {
+            toast({
+                title: "Validation Error",
+                description: "Please enter a valid bid running time in days.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setPlacingBidRequest(true);
         try {
             // First create the item if it doesn't exist
@@ -841,6 +896,7 @@ export default function BuyerDashboard() {
                     ...(bidForm.specification && { 'Specification': bidForm.specification }),
                     ...(bidForm.quality && { 'Quality Grade': QUALITY_GRADES.find(g => g.value === bidForm.quality)?.label || bidForm.quality }),
                     'Expected Delivery': bidForm.expectedDeliveryDate,
+                    'Bid Running Time (days)': String(bidRunningTimeDays),
                 },
                 sellerId: user.id, // Buyer creates the request
                 status: 'active',
@@ -877,6 +933,7 @@ export default function BuyerDashboard() {
                 state: '',
                 shippingAddress: '',
                 notes: '',
+                bidRunningTime: '',
             });
             setSelectedCatalogProduct(null);
 
@@ -1223,16 +1280,11 @@ export default function BuyerDashboard() {
                         </Card>
                     </div>
 
-                    {/* Place New Bid Request Button */}
-                    <div className="flex justify-center">
-                        <Button
-                            size="lg"
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg transition-all hover:scale-105 px-8"
-                            onClick={() => setIsPlaceBidDialogOpen(true)}
-                        >
-                            <Plus className="mr-2 h-5 w-5" />
-                            Place New Bid Request
-                        </Button>
+                    {/* Place Bid helper text (replaces previous button) */}
+                    <div className="flex justify-start mb-6">
+                        <h2 className="text-4xl font-bold text-purple-700 dark:text-purple-300 tracking-tight">
+                            Place Bid Request
+                        </h2>
                     </div>
 
                     {/* Main Content - Based on URL tab parameter */}
@@ -1312,78 +1364,173 @@ export default function BuyerDashboard() {
                                     </CardContent>
                                 </Card>
 
-                                {/* Items Grid */}
-                                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                                    {filteredItems.map((item) => (
-                                        <CardContainer key={item.id} className="inter-var w-full">
-                                            <CardBody className="bg-white dark:bg-gray-950 relative group/card hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] border-gray-200 dark:border-white/[0.2] w-full h-auto rounded-xl p-6 border shadow-sm">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <CardItem
-                                                        translateZ="50"
-                                                        className="text-xl font-bold text-gray-900 dark:text-white"
-                                                    >
-                                                        {item.name}
-                                                    </CardItem>
-                                                    {item.category && (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            {item.category}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <CardItem
-                                                    as="p"
-                                                    translateZ="60"
-                                                    className="text-gray-600 dark:text-gray-300 text-sm max-w-sm mt-2 line-clamp-2"
-                                                >
-                                                    {item.description}
-                                                </CardItem>
-                                                <CardItem translateZ="100" className="w-full mt-4">
-                                                    <div className="flex items-center justify-center w-full h-40 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl group-hover/card:shadow-xl">
-                                                        <Package className="h-16 w-16 text-purple-400" />
-                                                    </div>
-                                                </CardItem>
-                                                <div className="flex justify-between items-center mt-8">
-                                                    <CardItem
-                                                        translateZ={20}
-                                                        className="px-4 py-2 rounded-xl text-xs font-normal"
-                                                    >
-                                                        <span className="text-2xl font-bold text-purple-600">${item.price}</span>
-                                                        <span className="text-gray-500 ml-1">/ {item.size}</span>
-                                                    </CardItem>
-                                                    <CardItem
-                                                        translateZ={20}
-                                                        as="button"
-                                                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
-                                                        onClick={() => {
-                                                            setSelectedItem(item);
-                                                            setIsItemDetailsDialogOpen(true);
-                                                        }}
-                                                    >
-                                                        View Details
-                                                    </CardItem>
-                                                </div>
-                                            </CardBody>
-                                        </CardContainer>
-                                    ))}
+                                {/* My Bids (below the search/filter card, above Live Bids) */}
+                                {myBidOrders.length > 0 && (
+                                    <Card className="border border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/40 dark:bg-purple-900/10">
+                                        <CardContent className="p-4 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">My Bids</p>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Showing {Math.min(myBidsVisibleCount, myBidOrders.length)} of {myBidOrders.length}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {myBidOrders.slice(0, myBidsVisibleCount).map((order, index) => {
+                                                    const serial = index + 1;
+                                                    const specifications = order.item?.specifications || {};
+                                                    const hsnCode = (specifications as any)['HSN Code'] || '-';
+                                                    const quality = (specifications as any)['Quality Grade'] || '-';
+                                                    const size = order.item?.size || '-';
+                                                    const expectedDelivery = (specifications as any)['Expected Delivery'] || '-';
+                                                    const bidRunningTime = (specifications as any)['Bid Running Time (days)'] || '-';
+                                                    const pincodeMatch = order.shippingAddress?.match(/(\d{6})(?!.*\d{6})/);
+                                                    const pincode = pincodeMatch ? pincodeMatch[1] : '-';
 
-                                    {filteredItems.length === 0 && (
-                                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                                            <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                                            <h3 className="font-semibold text-lg">No items found</h3>
-                                            <p className="text-muted-foreground text-sm mt-1">
-                                                Try a different search term or category filter
-                                            </p>
-                                            <Button
-                                                variant="link"
-                                                onClick={() => {
-                                                    setItemSearchQuery('');
-                                                    setItemCategoryFilter('all');
-                                                }}
-                                            >
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    )}                            </div>
+                                                    return (
+                                                        <div
+                                                            key={order.id}
+                                                            className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 rounded-md bg-background px-4 py-4 border border-dashed border-purple-200 dark:border-purple-700"
+                                                        >
+                                                            <div className="flex items-start gap-2 text-sm md:text-base">
+                                                                <span className="font-semibold w-5">{serial}.</span>
+                                                                <div className="space-y-0.5">
+                                                                    <p className="font-medium line-clamp-1">
+                                                                        {order.item?.name || 'Bid Request'}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs md:text-sm text-muted-foreground">
+                                                                        <span>HSN: <span className="font-medium text-foreground">{hsnCode}</span></span>
+                                                                        <span>Quality: <span className="font-medium text-foreground">{quality}</span></span>
+                                                                        <span>Qty: <span className="font-medium text-foreground">{order.quantity}</span></span>
+                                                                        <span>Size: <span className="font-medium text-foreground">{size}</span></span>
+                                                                        <span>Expected: <span className="font-medium text-foreground">{expectedDelivery}</span></span>
+                                                                        <span>Pincode: <span className="font-medium text-foreground">{pincode}</span></span>
+                                                                        <span>Bid Time: <span className="font-medium text-foreground">{bidRunningTime}</span></span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex justify-end">
+                                                                <Button
+                                                                    size="xs"
+                                                                    variant="outline"
+                                                                    className="text-[11px] md:text-xs"
+                                                                    onClick={() => {
+                                                                        const specs = order.item?.specifications || {};
+                                                                        setBidForm({
+                                                                            productName: order.item?.name || '',
+                                                                            hsnCode: (specs as any)['HSN Code'] || '',
+                                                                            size: order.item?.size || '',
+                                                                            specification: (specs as any)['Specification'] || '',
+                                                                            quality: '',
+                                                                            quantity: String(order.quantity || ''),
+                                                                            expectedDeliveryDate: (specs as any)['Expected Delivery'] || '',
+                                                                            pincode,
+                                                                            city: '',
+                                                                            state: '',
+                                                                            shippingAddress: order.shippingAddress || '',
+                                                                            notes: order.notes || '',
+                                                                            bidRunningTime: (specs as any)['Bid Running Time (days)'] || '',
+                                                                        });
+                                                                        setIsPlaceBidDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    Add New
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {myBidOrders.length > myBidsVisibleCount && (
+                                                <div className="flex justify-center pt-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="xs"
+                                                        className="text-xs"
+                                                        onClick={() => setMyBidsVisibleCount((prev) => prev + 4)}
+                                                    >
+                                                        Load more
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Items Grid - only visible when a search term is entered */}
+                                {itemSearchQuery ? (
+                                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                        {filteredItems.map((item) => (
+                                            <CardContainer key={item.id} className="inter-var w-full">
+                                                <CardBody className="bg-white dark:bg-gray-950 relative group/card hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] border-gray-200 dark:border-white/[0.2] w-full h-auto rounded-xl p-6 border shadow-sm">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <CardItem
+                                                            translateZ="50"
+                                                            className="text-xl font-bold text-gray-900 dark:text-white"
+                                                        >
+                                                            {item.name}
+                                                        </CardItem>
+                                                        {item.category && (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                {item.category}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <CardItem
+                                                        as="p"
+                                                        translateZ="60"
+                                                        className="text-gray-600 dark:text-gray-300 text-sm max-w-sm mt-2 line-clamp-2"
+                                                    >
+                                                        {item.description}
+                                                    </CardItem>
+                                                    <CardItem translateZ="100" className="w-full mt-4">
+                                                        <div className="flex items-center justify-center w-full h-40 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl group-hover/card:shadow-xl">
+                                                            <Package className="h-16 w-16 text-purple-400" />
+                                                        </div>
+                                                    </CardItem>
+                                                    <div className="flex justify-between items-center mt-8">
+                                                        <CardItem
+                                                            translateZ={20}
+                                                            className="px-4 py-2 rounded-xl text-xs font-normal"
+                                                        >
+                                                            <span className="text-2xl font-bold text-purple-600">${item.price}</span>
+                                                            <span className="text-gray-500 ml-1">/ {item.size}</span>
+                                                        </CardItem>
+                                                        <CardItem
+                                                            translateZ={20}
+                                                            as="button"
+                                                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
+                                                            onClick={() => {
+                                                                setSelectedItem(item);
+                                                                setIsItemDetailsDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            View Details
+                                                        </CardItem>
+                                                    </div>
+                                                </CardBody>
+                                            </CardContainer>
+                                        ))}
+
+                                        {filteredItems.length === 0 && (
+                                            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                                                <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                                                <h3 className="font-semibold text-lg">No items found</h3>
+                                                <p className="text-muted-foreground text-sm mt-1">
+                                                    Try a different search term or category filter
+                                                </p>
+                                                <Button
+                                                    variant="link"
+                                                    onClick={() => {
+                                                        setItemSearchQuery('');
+                                                        setItemCategoryFilter('all');
+                                                    }}
+                                                >
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
                             </div>
                         )}
 
@@ -1488,12 +1635,6 @@ export default function BuyerDashboard() {
                                                         <p className="font-medium capitalize">{bid.status}</p>
                                                     </div>
                                                 </div>
-                                                {bid.message && (
-                                                    <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
-                                                        <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
-                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
-                                                    </div>
-                                                )}
                                             </CardContent>
                                             {bid.status === 'pending' && (
                                                 <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
@@ -1533,8 +1674,17 @@ export default function BuyerDashboard() {
                             </div>
 
                             <div className="grid gap-4">
-                                {bids.filter(b => b.status === 'pending').map((bid) => {
+                                {Object.values(
+                                    bids.filter(b => b.status === 'pending').reduce((acc, bid) => {
+                                        if (!acc[bid.orderId] || bid.bidAmount < acc[bid.orderId].bidAmount) {
+                                            acc[bid.orderId] = bid;
+                                        }
+                                        return acc;
+                                    }, {} as Record<string, Bid>)
+                                ).map((bid) => {
                                     const order = orders.find(o => o.id === bid.orderId);
+                                    const timeLeftLabel = getBidTimeLeftLabel(order);
+                                    const isExpired = timeLeftLabel === 'Expired';
                                     return (
                                         <Card key={bid.id} className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900 overflow-hidden relative">
                                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500" />
@@ -1548,9 +1698,17 @@ export default function BuyerDashboard() {
                                                             Bid from Vendor #{bid.sellerId?.slice(0, 6).toUpperCase() || bid.id.slice(0, 6).toUpperCase()} • {new Date(bid.createdAt).toLocaleDateString()}
                                                         </CardDescription>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                                                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">Live</Badge>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                                                            <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">Live</Badge>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                            <Clock className={`h-5 w-5 ${isExpired ? 'text-red-500' : 'text-orange-500'}`} />
+                                                            <span className={isExpired ? 'text-red-600 font-medium' : ''}>
+                                                                {timeLeftLabel}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardHeader>
@@ -1569,16 +1727,10 @@ export default function BuyerDashboard() {
                                                         <p className="font-medium">{order?.quantity || 'N/A'} units</p>
                                                     </div>
                                                 </div>
-                                                {bid.message && (
-                                                    <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
-                                                        <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">Message from Seller</Label>
-                                                        <p className="font-medium mt-1 text-gray-700 dark:text-gray-300">"{bid.message}"</p>
-                                                    </div>
-                                                )}
                                             </CardContent>
                                             <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
                                                 <Button
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
+                                                    className="w-32 rounded-lg bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
                                                     onClick={() => handleAcceptBid(bid.id)}
                                                 >
                                                     <Check className="mr-2 h-4 w-4" />
@@ -1586,7 +1738,7 @@ export default function BuyerDashboard() {
                                                 </Button>
                                                 <Button
                                                     variant="destructive"
-                                                    className="flex-1 shadow-lg shadow-red-500/20"
+                                                    className="w-32 rounded-lg shadow-lg shadow-red-500/20"
                                                     onClick={() => handleRejectBid(bid.id)}
                                                 >
                                                     <X className="mr-2 h-4 w-4" />
@@ -2130,6 +2282,7 @@ export default function BuyerDashboard() {
                                 state: '',
                                 shippingAddress: '',
                                 notes: '',
+                                bidRunningTime: '',
                             });
                             setSelectedCatalogProduct(null);
                         }
@@ -2255,6 +2408,21 @@ export default function BuyerDashboard() {
                                     </div>
                                 </div>
 
+                                {/* Bid Running Time */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="bidRunningTime">Bid Running Time (days) *</Label>
+                                        <Input
+                                            id="bidRunningTime"
+                                            type="number"
+                                            min="1"
+                                            value={bidForm.bidRunningTime}
+                                            onChange={(e) => setBidForm({ ...bidForm, bidRunningTime: e.target.value })}
+                                            placeholder="e.g., 3"
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Location Details */}
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
@@ -2344,6 +2512,12 @@ export default function BuyerDashboard() {
                                                     <div>
                                                         <span className="text-muted-foreground">Expected By:</span>
                                                         <p className="font-medium">{new Date(bidForm.expectedDeliveryDate).toLocaleDateString()}</p>
+                                                    </div>
+                                                )}
+                                                {bidForm.bidRunningTime && (
+                                                    <div>
+                                                        <span className="text-muted-foreground">Bid Running Time:</span>
+                                                        <p className="font-medium">{bidForm.bidRunningTime} days</p>
                                                     </div>
                                                 )}
                                             </div>
