@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -394,7 +395,7 @@ const INDIAN_STATES = [
     'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
 ];
 
-export default function BuyerDashboard() {
+function BuyerDashboardContent() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -2758,5 +2759,22 @@ export default function BuyerDashboard() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function BuyerDashboardPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout role="buyer">
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                        <p className="mt-4 text-muted-foreground">Loading buyer dashboard...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        }>
+            <BuyerDashboardContent />
+        </Suspense>
     );
 }
