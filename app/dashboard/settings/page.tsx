@@ -131,7 +131,7 @@ export default function SettingsPage() {
             <Input
               id="companyName"
               value={profile.companyName}
-              onChange={(e) => setProfile((prev) => ({ ...prev, companyName: e.target.value }))}
+              onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
               placeholder="e.g., Morera Ventures LLP"
             />
           </div>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
             <Input
               id="buyerName"
               value={profile.buyerName}
-              onChange={(e) => setProfile((prev) => ({ ...prev, buyerName: e.target.value }))}
+              onChange={(e) => setProfile({ ...profile, buyerName: e.target.value })}
               placeholder="Your name"
             />
           </div>
@@ -163,7 +163,7 @@ export default function SettingsPage() {
               id="email"
               type="email"
               value={profile.email}
-              onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               placeholder="your@email.com"
             />
           </div>

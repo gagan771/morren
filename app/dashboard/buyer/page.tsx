@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { CardContainer, CardBody, CardItem } from '@/components/ui/aceternity/3d-card';
 import { BackgroundBeams } from '@/components/ui/aceternity/background-beams';
 import { useAuth } from '@/contexts/AuthContext';
-import { getActiveItems, getOrdersByBuyer, getBidsByOrder, createOrder, getBuyerStats, updateBid, updateOrder, createItem } from '@/lib/supabase-api';
+import { getActiveItems, getOrdersByBuyer, getBidsByOrder, createOrder, getBuyerStats, updateBid, updateOrder, createItem, deleteBid } from '@/lib/supabase-api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -594,7 +594,6 @@ function BuyerDashboardContent() {
             specification: product.variety,
         });
         setIsSelectProductDialogOpen(false);
-        setIsPlaceBidDialogOpen(true);
         setCatalogSearchQuery('');
         setSelectedCategory('all');
     };
@@ -724,13 +723,9 @@ function BuyerDashboardContent() {
             router.replace(`/dashboard/${user.role}`);
             return;
         }
-
-        // User is authenticated and is a buyer, fetch data
-        console.log('Buyer authenticated, fetching data');
-        fetchData();
     }, [user, authLoading, router]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!user) return;
         try {
             setLoading(true);
@@ -752,7 +747,16 @@ function BuyerDashboardContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    // Separate effect for fetching data
+    useEffect(() => {
+        if (user && user.role === 'buyer') {
+            // User is authenticated and is a buyer, fetch data
+            console.log('Buyer authenticated, fetching data');
+            fetchData();
+        }
+    }, [user, fetchData]);
 
     const handlePlaceOrder = async () => {
         if (!selectedItem || !user) {
@@ -883,6 +887,7 @@ function BuyerDashboardContent() {
         setPlacingBidRequest(true);
         try {
             // First create the item if it doesn't exist
+            // Note: For bid requests, we don't set sellerId since buyer is creating it
             const newItem = await createItem({
                 name: bidForm.productName,
                 description: `Bid Request: ${bidForm.productName}${bidForm.specification ? ` - ${bidForm.specification}` : ''}`,
@@ -899,7 +904,7 @@ function BuyerDashboardContent() {
                     'Expected Delivery': bidForm.expectedDeliveryDate,
                     'Bid Running Time (days)': String(bidRunningTimeDays),
                 },
-                sellerId: user.id, // Buyer creates the request
+                sellerId: null as any, // Bid request items don't have a seller initially
                 status: 'active',
             });
 
@@ -1000,6 +1005,26 @@ function BuyerDashboardContent() {
             toast({
                 title: "Error",
                 description: error?.message || "Failed to reject bid. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDeleteBid = async (bidId: string) => {
+        try {
+            await deleteBid(bidId);
+
+            toast({
+                title: "Bid Deleted",
+                description: "The bid has been permanently deleted.",
+            });
+
+            await fetchData();
+        } catch (error: any) {
+            console.error('Error deleting bid:', error);
+            toast({
+                title: "Error",
+                description: error?.message || "Failed to delete bid. Please try again.",
                 variant: "destructive",
             });
         }
@@ -1207,23 +1232,6 @@ function BuyerDashboardContent() {
                             </h1>
                             <p className="text-gray-600 dark:text-gray-400 mt-1">Here's what's happening with your orders today.</p>
                         </div>
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300 hover:bg-gray-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
-                                onClick={() => setIsSelectProductDialogOpen(true)}
-                            >
-                                <Search className="mr-2 h-4 w-4" />
-                                Browse Catalog
-                            </Button>
-                            <Button
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md transition-all hover:scale-105"
-                                onClick={() => setIsAddToListDialogOpen(true)}
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add New Item
-                            </Button>
-                        </div>
                     </div>
 
                     {/* Stats Cards */}
@@ -1295,70 +1303,84 @@ function BuyerDashboardContent() {
                             <div className="space-y-6">
                                 {/* Category Filter and Search */}
                                 <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900">
-                                    <CardContent className="p-4">
-                                        <div className="flex flex-col gap-4">
-                                            {/* Search Box */}
-                                            <div className="relative">
-                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="Search items by name, description, or category..."
-                                                    value={itemSearchQuery}
-                                                    onChange={(e) => setItemSearchQuery(e.target.value)}
-                                                    className="pl-10"
-                                                />
+                                    <CardContent className="p-6">
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                {/* Product Name */}
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quick-product-name" className="text-sm font-medium">Product Name</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            id="quick-product-name"
+                                                            placeholder="Enter or search from catalog"
+                                                            value={bidForm.productName}
+                                                            onChange={(e) => setBidForm({ ...bidForm, productName: e.target.value })}
+                                                            className="flex-1"
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => setIsSelectProductDialogOpen(true)}
+                                                            title="Browse Catalog"
+                                                        >
+                                                            <Search className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Quantity */}
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quick-quantity" className="text-sm font-medium">Quantity</Label>
+                                                    <Input
+                                                        id="quick-quantity"
+                                                        type="number"
+                                                        placeholder="Enter quantity"
+                                                        value={bidForm.quantity}
+                                                        onChange={(e) => setBidForm({ ...bidForm, quantity: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                {/* Quality */}
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quick-quality" className="text-sm font-medium">Quality</Label>
+                                                    <Select
+                                                        value={bidForm.quality}
+                                                        onValueChange={(value) => setBidForm({ ...bidForm, quality: value })}
+                                                    >
+                                                        <SelectTrigger id="quick-quality">
+                                                            <SelectValue placeholder="Select quality" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="premium">Premium Quality</SelectItem>
+                                                            <SelectItem value="standard">Standard Quality</SelectItem>
+                                                            <SelectItem value="commercial">Commercial Quality</SelectItem>
+                                                            <SelectItem value="reject">Reject Quality</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Expected Delivery Date */}
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quick-expected-date" className="text-sm font-medium">Expected Date</Label>
+                                                    <Input
+                                                        id="quick-expected-date"
+                                                        type="date"
+                                                        value={bidForm.expectedDeliveryDate}
+                                                        onChange={(e) => setBidForm({ ...bidForm, expectedDeliveryDate: e.target.value })}
+                                                    />
+                                                </div>
                                             </div>
 
-                                            {/* Category Filter Badges */}
-                                            <div className="flex flex-wrap gap-2">
-                                                <Badge
-                                                    variant={itemCategoryFilter === 'all' ? 'default' : 'outline'}
-                                                    className="cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors px-3 py-1"
-                                                    onClick={() => setItemCategoryFilter('all')}
-                                                >
-                                                    All Items ({items.length})
-                                                </Badge>
-                                                <Badge
-                                                    variant={itemCategoryFilter === 'spices' ? 'default' : 'outline'}
-                                                    className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors px-3 py-1"
-                                                    onClick={() => setItemCategoryFilter('spices')}
-                                                >
-                                                    🌶️ Spices
-                                                </Badge>
-                                                <Badge
-                                                    variant={itemCategoryFilter === 'vegetables' ? 'default' : 'outline'}
-                                                    className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors px-3 py-1"
-                                                    onClick={() => setItemCategoryFilter('vegetables')}
-                                                >
-                                                    🥬 Vegetables
-                                                </Badge>
-                                                <Badge
-                                                    variant={itemCategoryFilter === 'pulses' ? 'default' : 'outline'}
-                                                    className="cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors px-3 py-1"
-                                                    onClick={() => setItemCategoryFilter('pulses')}
-                                                >
-                                                    🫘 Pulses
-                                                </Badge>
-                                                <Badge
-                                                    variant={itemCategoryFilter === 'dry fruits' ? 'default' : 'outline'}
-                                                    className="cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors px-3 py-1"
-                                                    onClick={() => setItemCategoryFilter('dry fruits')}
-                                                >
-                                                    🥜 Dry Fruits & Nuts
-                                                </Badge>
-                                            </div>
-
-                                            {/* Quick Action - Place Bid Request */}
-                                            <div className="flex items-center justify-between pt-2 border-t">
-                                                <p className="text-sm text-muted-foreground">
-                                                    {filteredItems.length} items found
-                                                    {itemSearchQuery && ` for "${itemSearchQuery}"`}
-                                                </p>
+                                            {/* Continue Button */}
+                                            <div className="flex justify-end pt-2">
                                                 <Button
-                                                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                                                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8"
                                                     onClick={() => setIsPlaceBidDialogOpen(true)}
+                                                    disabled={!bidForm.productName || !bidForm.quantity}
                                                 >
-                                                    <Plus className="mr-2 h-4 w-4" />
-                                                    Place Bid Request
+                                                    Continue
+                                                    <Send className="ml-2 h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -1411,7 +1433,7 @@ function BuyerDashboardContent() {
                                                             </div>
                                                             <div className="flex justify-end">
                                                                 <Button
-                                                                    size="xs"
+                                                                    size="sm"
                                                                     variant="outline"
                                                                     className="text-[11px] md:text-xs"
                                                                     onClick={() => {
@@ -1445,7 +1467,7 @@ function BuyerDashboardContent() {
                                                 <div className="flex justify-center pt-1">
                                                     <Button
                                                         variant="ghost"
-                                                        size="xs"
+                                                        size="sm"
                                                         className="text-xs"
                                                         onClick={() => setMyBidsVisibleCount((prev) => prev + 4)}
                                                     >
@@ -1644,7 +1666,7 @@ function BuyerDashboardContent() {
                                                         onClick={() => handleAcceptBid(bid.id)}
                                                     >
                                                         <Check className="mr-2 h-4 w-4" />
-                                                        Accept Bid
+                                                        Accept
                                                     </Button>
                                                     <Button
                                                         variant="destructive"
@@ -1652,7 +1674,27 @@ function BuyerDashboardContent() {
                                                         onClick={() => handleRejectBid(bid.id)}
                                                     >
                                                         <X className="mr-2 h-4 w-4" />
-                                                        Reject Bid
+                                                        Reject
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => handleDeleteBid(bid.id)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </Button>
+                                                </CardFooter>
+                                            )}
+                                            {bid.status !== 'pending' && (
+                                                <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => handleDeleteBid(bid.id)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete Bid
                                                     </Button>
                                                 </CardFooter>
                                             )}
@@ -1735,7 +1777,7 @@ function BuyerDashboardContent() {
                                                     onClick={() => handleAcceptBid(bid.id)}
                                                 >
                                                     <Check className="mr-2 h-4 w-4" />
-                                                    Accept Bid
+                                                    Accept
                                                 </Button>
                                                 <Button
                                                     variant="destructive"
@@ -1743,7 +1785,15 @@ function BuyerDashboardContent() {
                                                     onClick={() => handleRejectBid(bid.id)}
                                                 >
                                                     <X className="mr-2 h-4 w-4" />
-                                                    Reject Bid
+                                                    Reject
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-32 rounded-lg"
+                                                    onClick={() => handleDeleteBid(bid.id)}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
                                                 </Button>
                                             </CardFooter>
                                         </Card>
@@ -2524,7 +2574,7 @@ function BuyerDashboardContent() {
                                 </Button>
                                 <Button
                                     onClick={handlePlaceBidRequest}
-                                    disabled={placingBidRequest || !bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.pincode || !bidForm.city || !bidForm.state || bidForm.pincode.length !== 6}
+                                    disabled={placingBidRequest || !bidForm.productName || !bidForm.quantity || !bidForm.shippingAddress || !bidForm.expectedDeliveryDate || !bidForm.bidRunningTime || !bidForm.pincode || !bidForm.city || !bidForm.state || bidForm.pincode.length !== 6}
                                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                                 >
                                     <ShoppingCart className="mr-2 h-4 w-4" />

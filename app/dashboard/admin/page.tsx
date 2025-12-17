@@ -16,7 +16,7 @@ import { Item, Order, Bid, User } from '@/lib/types';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { BackgroundBeams } from '@/components/ui/aceternity/background-beams';
 import { useAuth } from '@/contexts/AuthContext';
-import { getItems, getOrders, getBids, getUsers, createItem, updateItem, deleteItem, deleteOrder, getAdminStats, createSellerAccount } from '@/lib/supabase-api';
+import { getItems, getOrders, getBids, getUsers, createItem, updateItem, deleteItem, deleteOrder, deleteBid, updateBid, updateOrder, getAdminStats, createSellerAccount } from '@/lib/supabase-api';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 import { useRouter } from 'next/navigation';
@@ -168,20 +168,90 @@ export default function AdminDashboard() {
     const handleDeleteItem = async (id: string) => {
         try {
             await deleteItem(id);
+            toast({
+                title: "Success",
+                description: "Item deleted successfully.",
+            });
             await fetchData();
         } catch (error) {
             console.error('Error deleting item:', error);
-            alert('Failed to delete item. Please try again.');
+            toast({
+                title: "Error",
+                description: "Failed to delete item. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
     const handleDeleteOrder = async (id: string) => {
         try {
             await deleteOrder(id);
+            toast({
+                title: "Success",
+                description: "Order deleted successfully.",
+            });
             await fetchData();
         } catch (error) {
             console.error('Error deleting order:', error);
-            alert('Failed to delete order. Please try again.');
+            toast({
+                title: "Error",
+                description: "Failed to delete order. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDeleteBid = async (id: string) => {
+        try {
+            await deleteBid(id);
+            toast({
+                title: "Success",
+                description: "Bid deleted successfully.",
+            });
+            await fetchData();
+        } catch (error) {
+            console.error('Error deleting bid:', error);
+            toast({
+                title: "Error",
+                description: "Failed to delete bid. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleUpdateBidStatus = async (bidId: string, status: 'accepted' | 'rejected') => {
+        try {
+            await updateBid(bidId, { status });
+            toast({
+                title: "Success",
+                description: `Bid ${status} successfully.`,
+            });
+            await fetchData();
+        } catch (error) {
+            console.error('Error updating bid status:', error);
+            toast({
+                title: "Error",
+                description: "Failed to update bid status. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleUpdateOrderStatus = async (orderId: string, status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled') => {
+        try {
+            await updateOrder(orderId, { status });
+            toast({
+                title: "Success",
+                description: `Order status updated to ${status}.`,
+            });
+            await fetchData();
+        } catch (error) {
+            console.error('Error updating order status:', error);
+            toast({
+                title: "Error",
+                description: "Failed to update order status. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
@@ -563,6 +633,23 @@ export default function AdminDashboard() {
                                                 </div>
                                             )}
                                         </CardContent>
+                                        <CardFooter className="gap-2 bg-gray-50/50 dark:bg-gray-900/50">
+                                            <Select
+                                                value={order.status}
+                                                onValueChange={(value) => handleUpdateOrderStatus(order.id, value as any)}
+                                            >
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="pending">Pending</SelectItem>
+                                                    <SelectItem value="accepted">Accepted</SelectItem>
+                                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                                    <SelectItem value="completed">Completed</SelectItem>
+                                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </CardFooter>
                                     </Card>
                                 ))}
                             </div>
@@ -572,18 +659,39 @@ export default function AdminDashboard() {
                         <TabsContent value="bids" className="space-y-6">
                             <div className="grid gap-6">
                                 {bids.map((bid) => (
-                                    <Card key={bid.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <Card key={bid.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                         <CardHeader>
                                             <div className="flex items-center justify-between">
-                                                <div>
+                                                <div className="flex-1">
                                                     <CardTitle className="flex items-center gap-2">
-                                                        Bid #{bid.id}
+                                                        Bid #{bid.id.slice(0, 8)}
                                                         <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
                                                     </CardTitle>
                                                     <CardDescription>
-                                                        Order #{bid.orderId} • Seller: {bid.seller?.name}
+                                                        Order #{bid.orderId.slice(0, 8)} • Seller: {bid.seller?.name || 'Unknown'}
                                                     </CardDescription>
                                                 </div>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Bid</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete this bid? This action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteBid(bid.id)} className="bg-red-600 hover:bg-red-700">
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         </CardHeader>
                                         <CardContent>
@@ -608,6 +716,23 @@ export default function AdminDashboard() {
                                                 </div>
                                             )}
                                         </CardContent>
+                                        {bid.status === 'pending' && (
+                                            <CardFooter className="gap-3 bg-gray-50/50 dark:bg-gray-900/50">
+                                                <Button
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                    onClick={() => handleUpdateBidStatus(bid.id, 'accepted')}
+                                                >
+                                                    Accept Bid
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    className="flex-1"
+                                                    onClick={() => handleUpdateBidStatus(bid.id, 'rejected')}
+                                                >
+                                                    Reject Bid
+                                                </Button>
+                                            </CardFooter>
+                                        )}
                                     </Card>
                                 ))}
                             </div>

@@ -1,3 +1,4 @@
+// @ts-nocheck - Recharts type compatibility issues
 'use client'
 
 import * as React from 'react'

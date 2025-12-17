@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getMarketPrices, addMarketPrice, getRFQs, type MarketPrice, type RFQ } from "@/lib/supabase-api"
+import { getMarketPrices, addMarketPrice, getRFQs, type MarketPrice, type RFQ, type Quote } from "@/lib/supabase-api"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -113,7 +113,7 @@ export default function MarketPricesPage() {
       : rfqs
           .filter((r) => r.productName.toLowerCase() === selectedProduct.toLowerCase())
           .flatMap((r) =>
-            r.quotes.map((q) => ({
+            r.quotes.map((q: Quote) => ({
               supplier: q.supplierName,
               price: q.pricePerUnit,
               date: new Date(q.submittedAt),

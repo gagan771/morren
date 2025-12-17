@@ -15,6 +15,7 @@ import {
   type Supplier,
   type SupplierInvite,
   type BuyerProfile,
+  type Quote,
 } from "@/lib/supabase-api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -191,7 +192,7 @@ export default function SupplierPortalPage() {
   }
 
   const lowestQuote = getLowestQuote(rfq.quotes)
-  const myQuote = rfq.quotes.find((q) => q.supplierId === supplier.id)
+  const myQuote = rfq.quotes.find((q: Quote) => q.supplierId === supplier.id)
   const hasQuoted = !!myQuote
   const isAwarded = rfq.status === "AWARDED"
   const isWinner = isAwarded && rfq.awardedTo?.supplierId === supplier.id

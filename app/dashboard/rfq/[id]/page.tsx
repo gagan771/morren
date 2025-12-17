@@ -13,6 +13,7 @@ import {
   type RFQ,
   type Supplier,
   type Quote,
+  type SupplierInvite,
 } from "@/lib/supabase-api"
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -214,7 +215,7 @@ export default function RFQDetailPage() {
   }
 
   const lowestQuote = getLowestQuote(rfq.quotes)
-  const availableSuppliers = suppliers.filter((s) => !rfq.invites.some((i) => i.supplierId === s.id))
+  const availableSuppliers = suppliers.filter((s) => !rfq.invites.some((i: SupplierInvite) => i.supplierId === s.id))
   const sortedQuotes = [...rfq.quotes].sort((a, b) => a.pricePerUnit - b.pricePerUnit)
 
   return (
@@ -541,7 +542,7 @@ export default function RFQDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {rfq.invites.map((invite) => {
+                  {rfq.invites.map((invite: SupplierInvite) => {
                     const supplier = suppliers.find((s) => s.id === invite.supplierId)
                     const status = statusConfig[invite.status]
                     const inviteUrl = generateInviteUrl(invite.inviteToken)

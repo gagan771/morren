@@ -26,7 +26,7 @@ export interface Item {
   specifications: {
     [key: string]: string;
   };
-  sellerId: string;
+  sellerId: string | null; // Nullable for bid request items
   seller?: User;
   status: 'active' | 'sold' | 'inactive';
   createdAt: Date;

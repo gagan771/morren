@@ -1,6 +1,9 @@
 import { supabase } from './supabase';
 import { Item, Order, Bid, User, DashboardStats, RFQ, Supplier, Quote, SupplierInvite, MarketPrice, BuyerProfile } from './types';
 
+// Re-export types for use in other files
+export type { RFQ, Supplier, Quote, SupplierInvite, MarketPrice, BuyerProfile } from './types';
+
 // ============= USERS =============
 
 export async function getUsers(): Promise<User[]> {
@@ -219,8 +222,8 @@ export async function getOrders(): Promise<Order[]> {
         .from('orders')
         .select(`
       *,
-      item:items(*),
-      buyer:users!buyer_id(*)
+      item:items(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at),
+      buyer:users!buyer_id(id, name, email, role, avatar)
     `)
         .order('created_at', { ascending: false });
 
@@ -233,8 +236,8 @@ export async function getOrderById(id: string): Promise<Order | null> {
         .from('orders')
         .select(`
       *,
-      item:items(*),
-      buyer:users!buyer_id(*)
+      item:items(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at),
+      buyer:users!buyer_id(id, name, email, role, avatar)
     `)
         .eq('id', id)
         .single();
@@ -248,8 +251,8 @@ export async function getOrdersByBuyer(buyerId: string): Promise<Order[]> {
         .from('orders')
         .select(`
       *,
-      item:items(*),
-      buyer:users!buyer_id(*)
+      item:items(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at),
+      buyer:users!buyer_id(id, name, email, role, avatar)
     `)
         .eq('buyer_id', buyerId)
         .order('created_at', { ascending: false });
@@ -265,7 +268,7 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
         .from('orders')
         .select(`
       *,
-      item:items(*)
+      item:items(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at)
     `)
         .eq('status', 'pending') // Only show pending orders available for bidding
         .order('created_at', { ascending: false });
@@ -292,8 +295,8 @@ export async function getSellerItemOrders(sellerId: string): Promise<Order[]> {
         .from('orders')
         .select(`
       *,
-      item:items!inner(*, seller_id),
-      buyer:users!buyer_id(*)
+      item:items!inner(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at),
+      buyer:users!buyer_id(id, name, email, role, avatar)
     `)
         .eq('item.seller_id', sellerId)
         .order('created_at', { ascending: false });
@@ -316,8 +319,8 @@ export async function createOrder(order: Omit<Order, 'id' | 'createdAt' | 'updat
         }])
         .select(`
             *,
-            item:items(*),
-            buyer:users!buyer_id(*)
+            item:items(id, name, description, image, price, size, category, condition, quantity, specifications, seller_id, status, created_at, updated_at),
+            buyer:users!buyer_id(id, name, email, role, avatar)
         `)
         .single();
 
@@ -395,8 +398,8 @@ export async function getBids(): Promise<Bid[]> {
         .from('bids')
         .select(`
       *,
-      order:orders(*),
-      seller:users!seller_id(*)
+      order:orders(id, item_id, buyer_id, quantity, total_price, status, shipping_address, notes, created_at, updated_at),
+      seller:users!seller_id(id, name, email, role, avatar)
     `)
         .order('created_at', { ascending: false });
 
@@ -409,8 +412,8 @@ export async function getBidById(id: string): Promise<Bid | null> {
         .from('bids')
         .select(`
       *,
-      order:orders(*),
-      seller:users!seller_id(*)
+      order:orders(id, item_id, buyer_id, quantity, total_price, status, shipping_address, notes, created_at, updated_at),
+      seller:users!seller_id(id, name, email, role, avatar)
     `)
         .eq('id', id)
         .single();
@@ -424,7 +427,7 @@ export async function getBidsByOrder(orderId: string, maskSellerInfo: boolean = 
         .from('bids')
         .select(`
       *,
-      order:orders(*)
+      order:orders(id, item_id, buyer_id, quantity, total_price, status, shipping_address, notes, created_at, updated_at)
     `)
         .eq('order_id', orderId)
         .order('created_at', { ascending: false });
@@ -449,8 +452,8 @@ export async function getBidsBySeller(sellerId: string): Promise<Bid[]> {
         .from('bids')
         .select(`
       *,
-      order:orders(*),
-      seller:users!seller_id(*)
+      order:orders(id, item_id, buyer_id, quantity, total_price, status, shipping_address, notes, created_at, updated_at),
+      seller:users!seller_id(id, name, email, role, avatar)
     `)
         .eq('seller_id', sellerId)
         .order('created_at', { ascending: false });

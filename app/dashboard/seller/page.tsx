@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,7 @@ export default function SellerDashboard() {
         }
     }, [user, authLoading, router]);
 
-    const fetchData = async (silent = false) => {
+    const fetchData = useCallback(async (silent = false) => {
         if (!user) return;
         
         if (!silent) {
@@ -104,14 +104,14 @@ export default function SellerDashboard() {
                 setLoading(false);
             }
         }
-    };
+    }, [user, toast]);
 
     // Initial data fetch
     useEffect(() => {
         if (user) {
             fetchData(false);
         }
-    }, [user]);
+    }, [user, fetchData]);
 
     // Auto-refresh orders every 10 seconds (silent updates)
     useEffect(() => {
@@ -122,7 +122,7 @@ export default function SellerDashboard() {
         }, 10000); // Poll every 10 seconds
 
         return () => clearInterval(interval);
-    }, [user, submittingBid]);
+    }, [user, submittingBid, fetchData]);
 
     const stats = {
         totalOrders: orders.length,
@@ -478,7 +478,7 @@ export default function SellerDashboard() {
                 orderId: selectedOrder.id,
                 sellerId: user.id,
                 bidAmount: bidAmount,
-                estimatedDelivery: new Date(bidForm.estimatedDelivery),
+                estimatedDelivery: bidForm.estimatedDelivery,
                 message: bidForm.message || undefined,
                 status: 'pending',
             });
@@ -539,7 +539,7 @@ export default function SellerDashboard() {
         try {
             await updateBid(editingBid.id, {
                 bidAmount: bidAmount,
-                estimatedDelivery: new Date(bidForm.estimatedDelivery),
+                estimatedDelivery: bidForm.estimatedDelivery,
                 message: bidForm.message || undefined,
             });
 
@@ -679,9 +679,12 @@ export default function SellerDashboard() {
                     {/* Place New Bid Req Section */}
                     <div className="space-y-6">
                         <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-2">
-                                <Package className="h-5 w-5 text-emerald-600" />
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Place New Bid Req</h2>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Package className="h-5 w-5 text-emerald-600" />
+                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Available Orders</h2>
+                                    <Badge variant="secondary" className="ml-2">{orders.length} orders</Badge>
+                                </div>
                             </div>
                             
                             {/* Search Bar */}
@@ -691,7 +694,7 @@ export default function SellerDashboard() {
                                 </div>
                                 <Input
                                     type="text"
-                                    placeholder="Search by Serial Number / Order ID..."
+                                    placeholder="Search by product name, order ID, or serial number..."
                                     className="pl-10 py-6 text-lg"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -700,12 +703,16 @@ export default function SellerDashboard() {
                         </div>
 
                         <div className="grid gap-6">
-                            {!searchQuery ? (
+                            {orders.length === 0 ? (
                                 <Card className="p-12 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                     <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                    <p className="text-muted-foreground">Search for an order ID or serial number to place a bid.</p>
+                                    <p className="text-muted-foreground">No orders available at the moment.</p>
                                 </Card>
-                            ) : orders.filter(o => o.id.toLowerCase().includes(searchQuery.toLowerCase()) || o.item?.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                            ) : orders.filter(o => 
+                                !searchQuery || 
+                                o.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                o.item?.name.toLowerCase().includes(searchQuery.toLowerCase())
+                            ).length === 0 ? (
                                 <Card className="p-12 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                     <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                     <p className="text-muted-foreground">No orders found matching "{searchQuery}".</p>
@@ -713,7 +720,11 @@ export default function SellerDashboard() {
                             ) : (
                                 <>
                                     {orders
-                                        .filter(o => o.id.toLowerCase().includes(searchQuery.toLowerCase()) || o.item?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                        .filter(o => 
+                                            !searchQuery || 
+                                            o.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                            o.item?.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                        )
                                         .map((order) => (
                                         <Card key={order.id} className="shadow-md hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                             <CardHeader>
@@ -986,7 +997,7 @@ export default function SellerDashboard() {
                                                     outerRadius={80}
                                                     paddingAngle={2}
                                                     dataKey="value"
-                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    label={({ name, percent }) => percent !== undefined ? `${name} ${(percent * 100).toFixed(0)}%` : name}
                                                     labelLine={false}
                                                 >
                                                     {bidStatusData.map((entry, index) => (
