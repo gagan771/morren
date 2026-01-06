@@ -127,7 +127,8 @@ export default function ShippingProviderDashboard() {
                 setLoading(false);
             }
         }
-    }, [user, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     // Initial data fetch
     useEffect(() => {
@@ -137,7 +138,8 @@ export default function ShippingProviderDashboard() {
         } else {
             console.log('Initial fetch skipped - no user yet');
         }
-    }, [user, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     // Safety timeout: if still loading after 5 seconds, force stop loading
     useEffect(() => {
@@ -160,7 +162,8 @@ export default function ShippingProviderDashboard() {
         }, 10000); // Poll every 10 seconds
 
         return () => clearInterval(interval);
-    }, [user, submittingBid, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, submittingBid]);
 
     const stats = {
         totalOrders: orders.length,
@@ -435,7 +438,7 @@ export default function ShippingProviderDashboard() {
         
         if (!comparison) return null;
         
-        const { myBid, lowestBid, diffFromLowest, myPosition, totalBidders, isLowest, competitorCount, isOnlyBidder } = comparison;
+        const { myBid, lowestBid, highestBid, diffFromLowest, myPosition, totalBidders, isLowest, competitorCount, isOnlyBidder } = comparison;
         
         if (isOnlyBidder) {
             return (
@@ -458,7 +461,9 @@ export default function ShippingProviderDashboard() {
             );
         }
         
-        const positionPercent = totalBidders > 1 ? ((myPosition - 1) / (totalBidders - 1)) * 100 : 0;
+        // Calculate position on bar based on bid amount relative to range
+        const bidRange = highestBid - lowestBid;
+        const positionPercent = bidRange > 0 ? ((myBid - lowestBid) / bidRange) * 100 : 0;
         
         let bgColor = 'bg-yellow-500';
         let textColor = 'text-yellow-700 dark:text-yellow-300';
@@ -469,18 +474,18 @@ export default function ShippingProviderDashboard() {
         let statusTitle = '';
         
         if (isLowest) {
-            bgColor = 'bg-blue-500';
-            textColor = 'text-blue-700 dark:text-blue-300';
-            bgLight = 'bg-blue-50 dark:bg-blue-900/20';
-            borderColor = 'border-blue-200 dark:border-blue-800';
+            bgColor = 'bg-green-500';
+            textColor = 'text-green-700 dark:text-green-300';
+            bgLight = 'bg-green-50 dark:bg-green-900/20';
+            borderColor = 'border-green-200 dark:border-green-800';
             icon = <Trophy className="h-5 w-5" />;
             statusTitle = "Best Shipping Price!";
             message = "You have the lowest shipping bid";
         } else if (diffFromLowest <= 5) {
-            bgColor = 'bg-blue-400';
-            textColor = 'text-blue-700 dark:text-blue-300';
-            bgLight = 'bg-blue-50 dark:bg-blue-900/20';
-            borderColor = 'border-blue-200 dark:border-blue-800';
+            bgColor = 'bg-green-400';
+            textColor = 'text-green-700 dark:text-green-300';
+            bgLight = 'bg-green-50 dark:bg-green-900/20';
+            borderColor = 'border-green-200 dark:border-green-800';
             icon = <ArrowDown className="h-5 w-5" />;
             statusTitle = "Very Competitive";
             message = `Only ${diffFromLowest.toFixed(1)}% above lowest`;
@@ -522,31 +527,31 @@ export default function ShippingProviderDashboard() {
                 
                 <div className="relative mt-8 mb-2 px-2">
                     <div className="flex justify-between text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                        <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                            Best Price
+                        <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            Best Price (${lowestBid.toFixed(0)})
                         </span>
                         <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                            Highest Price
+                            Highest (${highestBid.toFixed(0)})
                         </span>
                     </div>
                     
                     <div className="h-3 w-full rounded-full relative bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                         <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500 opacity-80"></div>
+                         <div className="absolute inset-0 bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 opacity-80"></div>
                     </div>
                     
                     <div 
                         className="absolute top-1/2 -translate-y-1/2 transition-all duration-700 ease-out z-10"
-                        style={{ left: `${Math.max(0, Math.min(100, positionPercent))}%` }}
+                        style={{ left: `calc(${Math.max(0, Math.min(100, positionPercent))}% - 1rem)` }}
                     >
-                        <div className="relative -ml-4 mt-3">
+                        <div className="relative mt-3">
                             <div className={`w-8 h-8 ${bgColor} rounded-full border-4 border-white dark:border-gray-900 shadow-xl flex items-center justify-center transform hover:scale-110 transition-transform`}>
                                 <div className="w-2 h-2 bg-white rounded-full" />
                             </div>
                             
-                            <div className={`absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold shadow-lg flex flex-col items-center ${isLowest ? 'bg-blue-600' : ''}`}>
+                            <div className={`absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-lg flex flex-col items-center ${isLowest ? 'bg-green-600' : 'bg-gray-900'}`}>
                                 <span>YOU</span>
                                 <span className="text-[10px] font-normal opacity-90">${myBid.toFixed(0)}</span>
-                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" style={{ borderTopColor: isLowest ? '#2563eb' : '#111827' }}></div>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent" style={{ borderTopColor: isLowest ? '#16a34a' : '#111827' }}></div>
                             </div>
                         </div>
                     </div>
@@ -618,8 +623,28 @@ export default function ShippingProviderDashboard() {
             return;
         }
 
+        // Validate delivery date is in the future
+        const deliveryDate = new Date(bidData.estimatedDelivery);
+        if (deliveryDate <= new Date()) {
+            toast({
+                title: "Validation Error",
+                description: "Delivery date must be in the future.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setSubmittingBid(true);
         try {
+            console.log('Creating shipping bid with data:', {
+                orderId: order.id,
+                shippingProviderId: user.id,
+                bidAmount: bidAmount,
+                estimatedDelivery: bidData.estimatedDelivery,
+                message: bidData.message || undefined,
+                status: 'pending',
+            });
+
             await createShippingBid({
                 orderId: order.id,
                 shippingProviderId: user.id,
@@ -643,9 +668,14 @@ export default function ShippingProviderDashboard() {
             await fetchData(false);
         } catch (error: any) {
             console.error('Error creating shipping bid:', error);
+            const errorMessage = error?.message || 
+                                error?.error_description ||
+                                error?.details || 
+                                (typeof error === 'string' ? error : null) ||
+                                "Failed to create shipping bid. Please check your connection and try again.";
             toast({
                 title: "Error",
-                description: error?.message || "Failed to create shipping bid. Please try again.",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {
@@ -682,8 +712,28 @@ export default function ShippingProviderDashboard() {
             return;
         }
 
+        // Validate delivery date is in the future
+        const deliveryDate = new Date(bidForm.estimatedDelivery);
+        if (deliveryDate <= new Date()) {
+            toast({
+                title: "Validation Error",
+                description: "Delivery date must be in the future.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setSubmittingBid(true);
         try {
+            console.log('Creating shipping bid with data:', {
+                orderId: selectedOrder.id,
+                shippingProviderId: user.id,
+                bidAmount: bidAmount,
+                estimatedDelivery: bidForm.estimatedDelivery,
+                message: bidForm.message || undefined,
+                status: 'pending',
+            });
+
             await createShippingBid({
                 orderId: selectedOrder.id,
                 shippingProviderId: user.id,
@@ -705,9 +755,14 @@ export default function ShippingProviderDashboard() {
             await fetchData(false);
         } catch (error: any) {
             console.error('Error creating shipping bid:', error);
+            const errorMessage = error?.message || 
+                                error?.error_description ||
+                                error?.details || 
+                                (typeof error === 'string' ? error : null) ||
+                                "Failed to create shipping bid. Please check your connection and try again.";
             toast({
                 title: "Error",
-                description: error?.message || "Failed to create shipping bid. Please try again.",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {
@@ -796,8 +851,6 @@ export default function ShippingProviderDashboard() {
     if (!user) {
         return null;
     }
-
-    const activeTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
 
     return (
         <DashboardLayout role="shipping_provider">
@@ -979,7 +1032,12 @@ export default function ShippingProviderDashboard() {
                                     )
                                 ) : (
                                     <>
-                                        {(showAllOrders ? filteredAndSortedOrders : filteredAndSortedOrders.slice(0, 5)).map((order) => (
+                                        {(showAllOrders ? filteredAndSortedOrders : filteredAndSortedOrders.slice(0, 5)).map((order) => {
+                                                            const hasMyBid = user && allOrderBids[order.id]?.some(b => b.shippingProviderId === user.id);
+                                                            const bidEndTime = calculateBidEndTime(order);
+                                                            const isBidExpired = new Date() > bidEndTime;
+                                                            
+                                                            return (
                                             <Card key={order.id} className="shadow-md hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group">
                                                 <CardHeader>
                                                     <div className="flex items-center justify-between">
@@ -991,12 +1049,16 @@ export default function ShippingProviderDashboard() {
                                                                 <CardTitle className="flex items-center gap-2">
                                                                     {order.item?.name || 'Unknown Item'}
                                                                     <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">{order.item?.category}</Badge>
+                                                                    {isBidExpired && (
+                                                                        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">Expired</Badge>
+                                                                    )}
                                                                 </CardTitle>
                                                                 <CardDescription>
                                                                     Order Number: {order.id}
                                                                 </CardDescription>
                                                             </div>
                                                         </div>
+                                                        {!hasMyBid && !isBidExpired && (
                                                         <div className="flex items-center gap-2">
                                                             <Input
                                                                 type="number"
@@ -1018,6 +1080,7 @@ export default function ShippingProviderDashboard() {
                                                                 type="date"
                                                                 className="h-9 w-36"
                                                                 value={inlineBidForms[order.id]?.estimatedDelivery || ''}
+                                                                min={new Date().toISOString().split('T')[0]}
                                                                 onChange={(e) => setInlineBidForms(prev => ({
                                                                     ...prev,
                                                                     [order.id]: {
@@ -1037,12 +1100,21 @@ export default function ShippingProviderDashboard() {
                                                                 {submittingBid ? "Placing..." : "Place Bid"}
                                                             </Button>
                                                         </div>
+                                                        )}
+                                                        {hasMyBid && (
+                                                            <Badge className="bg-green-100 text-green-700 border-green-200 px-4 py-2">
+                                                                ✓ Bid Placed
+                                                            </Badge>
+                                                        )}
+                                                        {isBidExpired && !hasMyBid && (
+                                                            <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 px-4 py-2">
+                                                                Bidding Closed
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="space-y-4">
-                                                    <BidComparisonIndicator orderId={order.id} />
-                                                    
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                                         <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                                                             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Product</Label>
                                                             <p className="text-sm font-bold truncate" title={order.item?.name}>{order.item?.name || 'N/A'}</p>
@@ -1059,6 +1131,14 @@ export default function ShippingProviderDashboard() {
                                                             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Pincode</Label>
                                                             <p className="text-sm font-medium">{order.shippingAddress?.match(/\d{6}/)?.[0] || 'N/A'}</p>
                                                         </div>
+                                                        <div className="p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-100 dark:border-orange-900/20">
+                                                            <Label className="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wider">Bid Ends In</Label>
+                                                            <ClockTimer 
+                                                                endTime={calculateBidEndTime(order)} 
+                                                                size={18}
+                                                                className="mt-1"
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {order.shippingAddress && (
@@ -1069,7 +1149,8 @@ export default function ShippingProviderDashboard() {
                                                     )}
                                                 </CardContent>
                                             </Card>
-                                        ))}
+                                            );
+                                        })}
                                         {filteredAndSortedOrders.length > 5 && (
                                             <Button
                                                 variant="outline"
@@ -1096,8 +1177,7 @@ export default function ShippingProviderDashboard() {
                     </div>
 
                     {/* My Shipping Bids Section */}
-                    {activeTab === 'mybids' && (
-                        <div className="space-y-6">
+                    <div className="space-y-6">
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -1197,86 +1277,113 @@ export default function ShippingProviderDashboard() {
                                     <>
                                         {(showAllBids ? filteredAndSortedBids : filteredAndSortedBids.slice(0, 5)).map((bid) => {
                                             const order = orders.find(o => o.id === bid.orderId);
+                                            const bidEndTime = order ? calculateBidEndTime(order) : new Date();
+                                            const isBidExpired = new Date() > bidEndTime;
+                                            
                                             return (
-                                                <Card key={bid.id} className="shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-                                                    <CardHeader>
+                                                <Card key={bid.id} className="shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-blue-900/10 border-2 border-blue-100 dark:border-blue-900/50 group overflow-hidden relative">
+                                                    {/* Decorative gradient overlay */}
+                                                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-full blur-3xl -z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                                                    
+                                                    <CardHeader className="relative z-10">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                                                    <Truck className="h-6 w-6 text-blue-600" />
+                                                                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg shadow-blue-500/30">
+                                                                    <Truck className="h-7 w-7 text-white" />
                                                                 </div>
                                                                 <div>
-                                                                    <CardTitle className="flex items-center gap-2">
+                                                                    <CardTitle className="flex items-center gap-2 text-lg">
                                                                         {order?.item?.name || 'Unknown Item'}
                                                                         {order?.item?.category && (
-                                                                            <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">{order.item.category}</Badge>
+                                                                            <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 border-blue-200">{order.item.category}</Badge>
                                                                         )}
                                                                     </CardTitle>
-                                                                    <CardDescription>
+                                                                    <CardDescription className="text-sm mt-1">
                                                                         Order #{bid.orderId.slice(0, 8)} • Placed on {new Date(bid.createdAt).toLocaleDateString()}
                                                                     </CardDescription>
                                                                 </div>
                                                             </div>
-                                                            <Badge variant="outline" className={getStatusColor(bid.status)}>{bid.status}</Badge>
+                                                            <div className="flex flex-col items-end gap-2">
+                                                                <Badge variant="outline" className={`${getStatusColor(bid.status)} font-semibold text-sm px-4 py-1.5 shadow-sm`}>
+                                                                    {bid.status === 'pending' ? '⏳ Pending' : bid.status === 'accepted' ? '✓ Accepted' : '✗ Rejected'}
+                                                                </Badge>
+                                                                {!isBidExpired && bid.status === 'pending' && (
+                                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                                                        Active
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </CardHeader>
-                                                    <CardContent className="space-y-4">
+                                                    <CardContent className="space-y-5 relative z-10">
                                                         <BidComparisonIndicator orderId={bid.orderId} />
                                                         
-                                                        {(() => {
-                                                            const comparison = getBidComparison(bid.orderId);
-                                                            return comparison && !comparison.isLowest && bid.status === 'pending' ? (
-                                                                <div className="flex justify-end">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => openEditBidDialog(bid)}
-                                                                        className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/20"
-                                                                    >
-                                                                        <TrendingUp className="mr-2 h-4 w-4" />
-                                                                        Update Bid
-                                                                    </Button>
-                                                                </div>
-                                                            ) : null;
-                                                        })()}
+                                                        {bid.status === 'pending' && order && !isBidExpired && (
+                                                            <div className="flex justify-end">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => openEditBidDialog(bid)}
+                                                                    className="bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 border-2 border-orange-300 hover:from-orange-100 hover:to-amber-100 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-200/50 dark:from-orange-900/20 dark:to-amber-900/20 dark:text-orange-400 dark:border-orange-700 dark:hover:border-orange-600 transition-all duration-300 font-semibold"
+                                                                >
+                                                                    <TrendingUp className="mr-2 h-4 w-4" />
+                                                                    Update Bid
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                            <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                                                                <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Your Shipping Bid</Label>
-                                                                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">${bid.bidAmount.toFixed(2)}</p>
+                                                            <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-md transition-all duration-300 group/card">
+                                                                <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                                                                    <DollarSign className="h-3 w-3" />
+                                                                    Your Shipping Bid
+                                                                </Label>
+                                                                <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-2 group-hover/card:scale-105 transition-transform">${bid.bidAmount.toFixed(2)}</p>
                                                             </div>
-                                                            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Delivery</Label>
-                                                                <p className="font-medium flex items-center gap-1">
-                                                                    <Calendar className="h-4 w-4" />
-                                                                    {new Date(bid.estimatedDelivery).toLocaleDateString()}
+                                                            <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-sm hover:shadow-md transition-all duration-300">
+                                                                <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                                                                    <Calendar className="h-3 w-3" />
+                                                                    Delivery Date
+                                                                </Label>
+                                                                <p className="font-bold text-purple-600 dark:text-purple-400 mt-2 text-sm">
+                                                                    {new Date(bid.estimatedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                                 </p>
                                                             </div>
-                                                            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Bid Status</Label>
-                                                                <p className="font-medium capitalize">{bid.status}</p>
+                                                            <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 shadow-sm hover:shadow-md transition-all duration-300">
+                                                                <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                                                                    <Activity className="h-3 w-3" />
+                                                                    Bid Status
+                                                                </Label>
+                                                                <p className="font-bold capitalize mt-2 text-emerald-600 dark:text-emerald-400">{bid.status}</p>
                                                             </div>
-                                                            <div className="p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-100 dark:border-orange-900/20">
-                                                                <Label className="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wider">Time Remaining</Label>
+                                                            <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border-2 border-orange-200 dark:border-orange-800 shadow-sm hover:shadow-md transition-all duration-300">
+                                                                <Label className="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wider font-bold">Time Remaining</Label>
                                                                 <ClockTimer 
-                                                                    endTime={order ? calculateBidEndTime(order) : new Date()} 
-                                                                    size={18}
-                                                                    className="mt-1"
+                                                                    endTime={bidEndTime} 
+                                                                    size={20}
+                                                                    className="mt-2"
                                                                 />
                                                             </div>
                                                         </div>
 
                                                         {order?.shippingAddress && (
-                                                            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Shipping Address</Label>
-                                                                <p className="font-medium mt-1">{order.shippingAddress}</p>
+                                                            <div className="p-4 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 rounded-xl border-2 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
+                                                                <Label className="text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                                                                    <Package className="h-3.5 w-3.5" />
+                                                                    Shipping Destination
+                                                                </Label>
+                                                                <p className="font-semibold mt-2 text-slate-700 dark:text-slate-300 leading-relaxed">{order.shippingAddress}</p>
                                                             </div>
                                                         )}
 
                                                         {bid.message && (
-                                                            <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                                                                <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Your Message</Label>
-                                                                <p className="font-medium mt-1">"{bid.message}"</p>
+                                                            <div className="p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-violet-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-lg hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300">
+                                                                <Label className="text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                                                                    <Send className="h-3.5 w-3.5" />
+                                                                    Your Note to Buyer
+                                                                </Label>
+                                                                <p className="font-medium mt-2 text-blue-700 dark:text-blue-300 italic leading-relaxed">"{bid.message}"</p>
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -1306,7 +1413,6 @@ export default function ShippingProviderDashboard() {
                                 )}
                             </div>
                         </div>
-                    )}
 
                     {/* Analytics Dashboard Section */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -1477,6 +1583,7 @@ export default function ShippingProviderDashboard() {
                                     <Input
                                         id="estimatedDelivery"
                                         type="date"
+                                        min={new Date().toISOString().split('T')[0]}
                                         value={bidForm.estimatedDelivery}
                                         onChange={(e) => setBidForm({ ...bidForm, estimatedDelivery: e.target.value })}
                                     />

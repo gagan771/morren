@@ -517,11 +517,12 @@ function transformShippingBid(data: any): ShippingBid {
         bidAmount: data.bid_amount,
         estimatedDelivery: data.estimated_delivery,
         message: data.message,
-        quantityKgs: data.quantity_kgs,
-        portOfLoading: data.port_of_loading,
-        destinationAddress: data.destination_address,
-        incoterms: data.incoterms,
-        mode: data.mode,
+        // Optional fields that may not exist in the database
+        quantityKgs: data.quantity_kgs || undefined,
+        portOfLoading: data.port_of_loading || undefined,
+        destinationAddress: data.destination_address || undefined,
+        incoterms: data.incoterms || undefined,
+        mode: data.mode || undefined,
         status: data.status,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
@@ -601,38 +602,40 @@ export async function getShippingBidsByProvider(shippingProviderId: string): Pro
 }
 
 export async function createShippingBid(bid: Omit<ShippingBid, 'id' | 'createdAt' | 'updatedAt'>): Promise<ShippingBid> {
+    // Only insert fields that exist in the shipping_bids table
+    const insertData: any = {
+        order_id: bid.orderId,
+        shipping_provider_id: bid.shippingProviderId,
+        bid_amount: bid.bidAmount,
+        estimated_delivery: bid.estimatedDelivery,
+        status: bid.status,
+    };
+    
+    // Add optional message field if provided
+    if (bid.message) {
+        insertData.message = bid.message;
+    }
+
     const { data, error } = await supabase
         .from('shipping_bids')
-        .insert([{
-            order_id: bid.orderId,
-            shipping_provider_id: bid.shippingProviderId,
-            bid_amount: bid.bidAmount,
-            estimated_delivery: bid.estimatedDelivery,
-            message: bid.message,
-            quantity_kgs: bid.quantityKgs,
-            port_of_loading: bid.portOfLoading,
-            destination_address: bid.destinationAddress,
-            incoterms: bid.incoterms,
-            mode: bid.mode,
-            status: bid.status,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('Supabase error creating shipping bid:', error);
+        throw new Error(error.message || 'Failed to create shipping bid');
+    }
+    
     return transformShippingBid(data);
 }
 
 export async function updateShippingBid(id: string, updates: Partial<ShippingBid>): Promise<ShippingBid> {
+    // Only update fields that exist in the shipping_bids table
     const updateData: any = {};
     if (updates.bidAmount !== undefined) updateData.bid_amount = updates.bidAmount;
     if (updates.estimatedDelivery !== undefined) updateData.estimated_delivery = updates.estimatedDelivery;
     if (updates.message !== undefined) updateData.message = updates.message;
-    if (updates.quantityKgs !== undefined) updateData.quantity_kgs = updates.quantityKgs;
-    if (updates.portOfLoading !== undefined) updateData.port_of_loading = updates.portOfLoading;
-    if (updates.destinationAddress !== undefined) updateData.destination_address = updates.destinationAddress;
-    if (updates.incoterms !== undefined) updateData.incoterms = updates.incoterms;
-    if (updates.mode !== undefined) updateData.mode = updates.mode;
     if (updates.status !== undefined) updateData.status = updates.status;
 
     const { data, error } = await supabase
@@ -642,7 +645,11 @@ export async function updateShippingBid(id: string, updates: Partial<ShippingBid
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('Supabase error updating shipping bid:', error);
+        throw new Error(error.message || 'Failed to update shipping bid');
+    }
+    
     return transformShippingBid(data);
 }
 
