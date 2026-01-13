@@ -918,8 +918,8 @@ export default function SellerDashboard() {
                         <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300 group">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Potential Revenue</CardTitle>
-                                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -1065,7 +1065,7 @@ export default function SellerDashboard() {
                                                                 type="number"
                                                                 step="0.01"
                                                                 placeholder="Bid Amount ($)"
-                                                                className="h-9 w-32"
+                                                                className="h-11 w-48 text-base font-semibold"
                                                                 value={inlineBidForms[order.id]?.bidAmount || ''}
                                                                 onChange={(e) => setInlineBidForms(prev => ({
                                                                     ...prev,
@@ -1095,7 +1095,7 @@ export default function SellerDashboard() {
                                                             />
                                                             <AddressAutocomplete
                                                                 placeholder="Pickup Address *"
-                                                                className="h-9 min-h-[36px] flex-1"
+                                                                className="h-9 min-h-[36px] w-64"
                                                                 value={inlineBidForms[order.id]?.pickupAddress || ''}
                                                                 onChange={(value) => setInlineBidForms(prev => ({
                                                                     ...prev,

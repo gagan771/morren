@@ -1834,8 +1834,8 @@ function BuyerDashboardContent() {
                         <Card className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Live Bids</CardTitle>
-                                <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                    <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                    <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -3330,52 +3330,42 @@ function BuyerDashboardContent() {
                                     </div>
                                 </div>
 
-                                {/* Two-Phase Bid Running Time */}
+                                {/* Bid Running Time - Single Input (Shipping auto-set to 1 day) */}
                                 <div className="space-y-4">
                                     <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
                                         <h3 className="font-semibold text-purple-700 dark:text-purple-300 mb-3 flex items-center gap-2">
                                             <Calendar className="h-4 w-4" />
-                                            Two-Phase Bidding Timeline
+                                            Bidding Timeline
                                         </h3>
                                         <p className="text-sm text-muted-foreground mb-4">
-                                            Set separate time windows: First for sellers to bid on your order, then for shipping providers to bid on transport.
+                                            Set how long sellers can bid on your order. (Shipping provider bidding will automatically be set to 1 day)
                                         </p>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label htmlFor="sellerBidRunningTime" className="text-purple-700 dark:text-purple-300 font-semibold">
-                                                    Phase 1: Seller Bids (days) *
-                                                </Label>
-                                                <Input
-                                                    id="sellerBidRunningTime"
-                                                    type="number"
-                                                    min="1"
-                                                    value={bidForm.sellerBidRunningTime}
-                                                    onChange={(e) => setBidForm({ ...bidForm, sellerBidRunningTime: e.target.value })}
-                                                    placeholder="e.g., 3"
-                                                    className="mt-1"
-                                                />
-                                                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                                    Sellers place their bids during this period
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="shippingBidRunningTime" className="text-blue-700 dark:text-blue-300 font-semibold">
-                                                    Phase 2: Shipping Bids (days) *
-                                                </Label>
-                                                <Input
-                                                    id="shippingBidRunningTime"
-                                                    type="number"
-                                                    min="1"
-                                                    value={bidForm.shippingBidRunningTime}
-                                                    onChange={(e) => setBidForm({ ...bidForm, shippingBidRunningTime: e.target.value })}
-                                                    placeholder="e.g., 2"
-                                                    className="mt-1"
-                                                />
-                                                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                                    Starts after seller bids end
-                                                </p>
-                                            </div>
+                                        <div>
+                                            <Label htmlFor="sellerBidRunningTime" className="text-purple-700 dark:text-purple-300 font-semibold">
+                                                Seller Bid Running Time (days) *
+                                            </Label>
+                                            <Input
+                                                id="sellerBidRunningTime"
+                                                type="number"
+                                                min="1"
+                                                value={bidForm.sellerBidRunningTime}
+                                                onChange={(e) => {
+                                                    setBidForm({
+                                                        ...bidForm,
+                                                        sellerBidRunningTime: e.target.value,
+                                                        shippingBidRunningTime: '1' // Auto-set to 1 day
+                                                    });
+                                                }}
+                                                placeholder="e.g., 3"
+                                                className="mt-1"
+                                            />
+                                            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                                Sellers will have this many days to place their bids
+                                            </p>
+                                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                                ℹ️ Shipping providers will automatically get 1 day to bid after a seller is selected
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -3583,7 +3573,6 @@ function BuyerDashboardContent() {
                                         !bidForm.shippingAddress ||
                                         !bidForm.expectedDeliveryDate ||
                                         !bidForm.sellerBidRunningTime ||
-                                        !bidForm.shippingBidRunningTime ||
                                         !bidForm.country ||
                                         !bidForm.city ||
                                         (bidForm.country === 'India' && (!bidForm.pincode || !bidForm.state || bidForm.pincode.length !== 6)) ||
