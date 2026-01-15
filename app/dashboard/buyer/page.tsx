@@ -17,6 +17,7 @@ import { CardContainer, CardBody, CardItem } from '@/components/ui/aceternity/3d
 import { BackgroundBeams } from '@/components/ui/aceternity/background-beams';
 import { ClockTimer } from '@/components/ui/clock-timer';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { getActiveItems, getOrdersByBuyer, getBidsByOrder, createOrder, getBuyerStats, updateBid, updateOrder, createItem, deleteBid, getShippingBidsByOrder, updateShippingBid } from '@/lib/supabase-api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1076,14 +1077,14 @@ function BuyerDashboardContent() {
         }
     }, [user, authLoading, router]);
 
-    const fetchData = useCallback(async (forceRefresh = false) => {
+    const fetchData = useCallback(async (forceRefresh = false, retryCount = 0) => {
         if (!user) {
             console.log('fetchData: No user, skipping and ensuring loading is false');
             setLoading(false); // Ensure loading is stopped
             return;
         }
 
-        console.log('fetchData: Starting...', { forceRefresh, userId: user.id });
+        console.log('fetchData: Starting...', { forceRefresh, userId: user.id, retryCount });
 
         try {
             setLoading(true);
@@ -1121,43 +1122,105 @@ function BuyerDashboardContent() {
                 console.log('fetchData: Fetched items:', freshItems.length, 'orders:', freshOrders.length);
             } catch (err) {
                 console.error('Error in Promise.all for items/orders:', err);
-                // Continue with empty arrays
+
+                // Retry logic for critical failures
+                if (retryCount < 2) {
+                    console.log(`Retrying data fetch (attempt ${retryCount + 1})...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+                    return fetchData(forceRefresh, retryCount + 1);
+                }
+
+                // If retries fail, show error but continue with empty arrays
+                toast({
+                    title: "Connection Issue",
+                    description: "Having trouble loading some data. Please check your connection.",
+                    variant: "destructive",
+                });
             }
 
             setItems(freshItems);
             setOrders(freshOrders);
 
-            // Fetch bids for all orders (both seller bids and shipping bids)
+            // **OPTIMIZED**: Batch fetch all bids in a single query instead of per-order
             let allBids: any[] = [];
             let allShippingBids: any[] = [];
 
             if (freshOrders.length > 0) {
                 try {
-                    const bidsPromises = freshOrders.map(order =>
-                        getBidsByOrder(order.id).catch(err => {
-                            console.error(`Error fetching bids for order ${order.id}:`, err);
-                            return [];
-                        })
-                    );
-                    const shippingBidsPromises = freshOrders.map(order =>
-                        getShippingBidsByOrder(order.id).catch(err => {
-                            console.error(`Error fetching shipping bids for order ${order.id}:`, err);
-                            return [];
-                        })
-                    );
+                    // Extract all order IDs for batch querying
+                    const orderIds = freshOrders.map(order => order.id);
 
-                    const [bidsArrays, shippingBidsArrays] = await Promise.all([
-                        Promise.all(bidsPromises),
-                        Promise.all(shippingBidsPromises)
+                    console.log(`Batch fetching bids for ${orderIds.length} orders...`);
+
+                    // **PERFORMANCE IMPROVEMENT**: Single query for all bids instead of N queries
+                    // This reduces API calls from O(n) to O(1)
+                    const [bidsResult, shippingBidsResult] = await Promise.all([
+                        // Fetch all seller bids for these orders in one query
+                        supabase
+                            .from('bids')
+                            .select('*')
+                            .in('order_id', orderIds)
+                            .order('created_at', { ascending: false })
+                            .then(({ data, error }) => {
+                                if (error) throw error;
+                                return data || [];
+                            })
+                            .catch(err => {
+                                console.error('Error batch fetching bids:', err);
+                                return [];
+                            }),
+
+                        // Fetch all shipping bids for these orders in one query
+                        supabase
+                            .from('shipping_bids')
+                            .select('*')
+                            .in('order_id', orderIds)
+                            .order('created_at', { ascending: false })
+                            .then(({ data, error }) => {
+                                if (error) throw error;
+                                return data || [];
+                            })
+                            .catch(err => {
+                                console.error('Error batch fetching shipping bids:', err);
+                                return [];
+                            })
                     ]);
 
-                    allBids = bidsArrays.flat();
-                    allShippingBids = shippingBidsArrays.flat();
+                    // Convert from snake_case to camelCase
+                    allBids = (bidsResult as any[]).map(bid => ({
+                        id: bid.id,
+                        orderId: bid.order_id,
+                        sellerId: bid.seller_id,
+                        bidAmount: bid.bid_amount,
+                        estimatedDelivery: bid.estimated_delivery,
+                        message: bid.message,
+                        pickupAddress: bid.pickup_address,
+                        status: bid.status,
+                        createdAt: bid.created_at,
+                        updatedAt: bid.updated_at
+                    }));
 
-                    console.log('fetchData: Fetched bids:', allBids.length, 'shipping bids:', allShippingBids.length);
+                    allShippingBids = (shippingBidsResult as any[]).map(bid => ({
+                        id: bid.id,
+                        orderId: bid.order_id,
+                        shippingProviderId: bid.shipping_provider_id,
+                        bidAmount: bid.bid_amount,
+                        estimatedDelivery: bid.estimated_delivery,
+                        message: bid.message,
+                        quantityKgs: bid.quantity_kgs,
+                        portOfLoading: bid.port_of_loading,
+                        destinationAddress: bid.destination_address,
+                        incoterms: bid.incoterms,
+                        mode: bid.mode,
+                        status: bid.status,
+                        createdAt: bid.created_at,
+                        updatedAt: bid.updated_at
+                    }));
+
+                    console.log(`fetchData: Batch fetched ${allBids.length} seller bids and ${allShippingBids.length} shipping bids`);
                 } catch (err) {
-                    console.error('Error fetching bids:', err);
-                    // Continue with empty arrays
+                    console.error('Error batch fetching bids:', err);
+                    // Continue with empty arrays rather than failing completely
                 }
             }
 
@@ -2493,6 +2556,11 @@ function BuyerDashboardContent() {
                                         const order = orders.find(o => o.id === bid.orderId);
                                         const timeLeftLabel = getBidTimeLeftLabel(order);
                                         const isExpired = timeLeftLabel === 'Expired';
+
+                                        // Check if order is domestic or international
+                                        const destinationCountry = order?.item?.specifications?.['Destination Country'] || 'India';
+                                        const isInternational = destinationCountry !== 'India';
+
                                         // Find the lowest shipping bid for this order
                                         const orderShippingBids = shippingBids.filter(sb => sb.orderId === bid.orderId && sb.status === 'pending');
                                         const lowestShippingBid = orderShippingBids.length > 0
@@ -2536,24 +2604,29 @@ function BuyerDashboardContent() {
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="space-y-3">
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <div className={`grid ${isInternational ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2'} gap-4`}>
                                                         <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/20">
                                                             <Label className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider">Seller Bid</Label>
                                                             <p className="text-xl font-bold text-purple-600">${bid.bidAmount.toFixed(2)}</p>
+                                                            <p className="text-[10px] text-purple-500 dark:text-purple-400 mt-0.5">exclusive GST</p>
                                                         </div>
-                                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                                                            <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Shipping Cost</Label>
-                                                            <p className="text-xl font-bold text-blue-600">
-                                                                {lowestShippingBid ? `$${lowestShippingBid.bidAmount.toFixed(2)}` : 'No bid yet'}
-                                                            </p>
-                                                            {orderShippingBids.length > 1 && (
-                                                                <p className="text-xs text-muted-foreground mt-1">{orderShippingBids.length} shipping bids</p>
-                                                            )}
-                                                        </div>
-                                                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
-                                                            <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Total Cost</Label>
-                                                            <p className="text-2xl font-bold text-emerald-600">${totalCost.toFixed(2)}</p>
-                                                        </div>
+                                                        {isInternational && (
+                                                            <>
+                                                                <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                                                                    <Label className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">Shipping Cost</Label>
+                                                                    <p className="text-xl font-bold text-blue-600">
+                                                                        {lowestShippingBid ? `$${lowestShippingBid.bidAmount.toFixed(2)}` : 'No bid yet'}
+                                                                    </p>
+                                                                    {orderShippingBids.length > 1 && (
+                                                                        <p className="text-xs text-muted-foreground mt-1">{orderShippingBids.length} shipping bids</p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
+                                                                    <Label className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Total Cost</Label>
+                                                                    <p className="text-2xl font-bold text-emerald-600">${totalCost.toFixed(2)}</p>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                         <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
                                                             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</Label>
                                                             <p className="font-medium">{order?.quantity || 'N/A'} units</p>
